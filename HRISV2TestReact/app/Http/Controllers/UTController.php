@@ -10,15 +10,19 @@ use App\Models\UTModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\CssSelector\Node\SelectorNode;
-
+use Inertia\Inertia;
 
 class UTController extends Controller
 {
     public function index()
-    {
-        return view('UT_Module.ut_entry');
+    {   
+        $currentUser = Auth::user()->name;
+        $utList = UTModel::where('emp_fullname', $currentUser)->paginate(5);
+        return Inertia::render('UT_Module/ut_entry', [
+            'UTList' => $utList
+        ]);
     }
-
+    
     public function UTEntry(Request $request): RedirectResponse
     {
         $request->validate([

@@ -1,0 +1,58 @@
+
+/* LOGIN REGISTER FORM */
+.card-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Center vertically */
+}
+.small-card {
+    max-width: 350px; /* Make the card a bit smaller */
+    width: 100%;      /* Responsive width */
+}
+/* LOGIN REGISTER FORM */
+
+
+/* UT DASHBOARD */
+.ut-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh; /* Center vertically */
+}
+
+.ut-container2{
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+.entry-card{
+    max-width: 500px;
+    width: 100%;
+}
+.table-card
+{
+    max-width: 900px;
+    width: 100%;
+}
+
+
+
+.root {
+    position: relative;
+  }
+  
+  .input {
+    height: 54px;
+    padding-top: 18px;
+  }
+  
+  .label {
+    position: absolute;
+    pointer-events: none;
+    font-size: var(--mantine-font-size-xs);
+    padding-left: var(--mantine-spacing-sm);
+    padding-top: calc(var(--mantine-spacing-sm) / 2);
+    z-index: 1;
+  }

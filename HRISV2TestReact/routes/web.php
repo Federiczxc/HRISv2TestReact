@@ -20,4 +20,4 @@ Route::post('/register', [UserController::class, 'store']);
 Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboard']);
 
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
-Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry'])->name('ut.entry');
+Route::get('/UT_Module/ut_entry/', [UTController::class, 'index']);
