@@ -10,7 +10,7 @@ const Navbar = () => {
   }
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="">
+      <a className="navbar-brand" href="">
   
     {auth.user ? `Welcome, ${auth.user.name}` : null}
    

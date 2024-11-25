@@ -149,7 +149,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                                                     <Form.Select
                                                         value={user.second_appr}
                                                         onChange={(e) => handleFieldChange(user.id, 'second_appr', e.target.value)}
-                                                    >
+                                                    > <option> Please select</option>
                                                         {approvers.map((option) => (
                                                             <option key={option.id} value={option.name}>
                                                                 {option.name}

@@ -17,7 +17,7 @@ class UTController extends Controller
     public function index()
     {   
         $currentUser = Auth::user()->name;
-        $utList = UTModel::where('emp_fullname', $currentUser)->paginate(5);
+        $utList = UTModel::where('emp_fullname', $currentUser)->paginate(3);
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList
         ]);
@@ -57,7 +57,31 @@ class UTController extends Controller
         ]);
         return redirect('/UT_Module/ut_entry')->with('success', 'dz');
     }
+    public function editUTRequest(Request $request)
+    {
+        $ut = UTModel::where('ut_no', $request->ut_no)->first();
+        $request->validate([
+            'ut_date' => 'required',
+            'ut_time' => 'required',
+            'ut_reason'
+        ], [
+            'ut_date.required' => 'date is required',
+            'ut_time.required' => 'time is required',
+        ]);
+        $ut->ut_date = $request->ut_date;
+        $ut->ut_time = $request->ut_time;
+        $ut->ut_reason = $request->ut_reason;
+        $ut->save();
+        return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut], 200);
+    }
 
+    public function viewUTRequest($id){
+        $viewUTRequest = UTModel::findorfail($id);
+       /*  dd("puke", $id, $viewUTRequest); */
+       return Inertia::render('UT_Module/ut_entry', [
+        'viewUTRequest' => $viewUTRequest,
+    ]);
+    }
     public function UTApprList()
     {
         $apprvID = Auth::user()->name;

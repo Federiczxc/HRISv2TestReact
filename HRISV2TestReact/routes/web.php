@@ -21,3 +21,5 @@ Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboar
 
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
 Route::get('/UT_Module/ut_entry/', [UTController::class, 'index']);
+Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest']);
+Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
