@@ -3,12 +3,12 @@ import '@mantine/dates/styles.css';
 import React, { useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
-import { Container, Card, Table, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Textarea, Modal, Button, Input, Select } from '@mantine/core';
+import { Container, Card, Table, Form} from 'react-bootstrap';
+import { ActionIcon, rem, Textarea, Modal, Button, Input, Select, Checkbox } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
-import { useDisclosure } from '@mantine/hooks';
 import { IconClock } from '@tabler/icons-react';
-import classes from '../../../css/mantine/form.module.css'
+import { Inertia } from '@inertiajs/inertia';
+
 export default function ut_entry({ UTList, viewUTRequest }) {
     const [values, setValues] = useState({
         ut_date: '',
@@ -35,17 +35,40 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         });
     }
 
+    const handleDelete = (utId) => {
+        Inertia.delete(`/UT_Module/ut_entry/${utId}`, {
+            preserveState: true, // Prevents full page reload
+            onSuccess: () => {
+                console.log('Record deleted successfully');
+                // Filter out the deleted item from the state
+                setUTList((prevUTList) => ({
+                    ...prevUTList,
+                    data: prevUTList.data.filter((ut) => ut.id !== utId),
+                }));
+            },
+            onError: (error) => {
+                console.error('Error deleting record:', error);
+            },
+        });
+    };
+    
+
     function handleEditSubmit(e) {
         e.preventDefault();
-        router.post('/UT_Module/ut_entry', selectedUT, {
+        router.post('/UT_Module/ut_entry/edit', {
+            ut_no: selectedUT.ut_no,
+            ut_date: values.ut_date,
+            ut_time: values.ut_time,
+            ut_reason: selectedUT.ut_reason,
             OnError: (errors) => {
                 console.error('Submission Error', errors);
             },
             OnSuccess: () => {
                 console.log('Scucess');
-                close2();
+
             }
         });
+        close2();
     }
     const formatTime = (time) => {
         const timeParts = time.split(':');
@@ -78,6 +101,14 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         setSelectedUT(utData);
         open2();
     }
+
+    function handleChange(name, value) {
+        setValues((prevValues) => ({
+            ...prevValues,
+            [name]: name === "ut_date" ? new Date(value) : value, // Convert ut_date to Date object
+        }));
+    }
+
     const [opened, setOpened] = useState(false);
     const open = () => setOpened(true);
     const close = () => setOpened(false)
@@ -97,13 +128,18 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     <Card.Body>
                         <form onSubmit={handleSubmit}>
                             <DateInput
-                                clearable
                                 label="Pick date and time"
                                 name="ut_date"
                                 value={values.ut_date}
-                                valueFormat="YYYY MM DD"
                                 placeholder="Pick date"
-                                onChange={(value) => handleChange("ut_date", value)}
+                                onChange={(value) => {
+                                    if (value) {
+                                        const formattedDate = value.toLocaleDateString('en-CA');
+                                        handleChange("ut_date", formattedDate);
+                                    } else {
+                                        handleChange("ut_date", '');
+                                    }
+                                }}
                             />
                             <TimeInput
                                 label="Time"
@@ -128,7 +164,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                         </form>
                     </Card.Body>
                 </Card>
-
+                                
                 <Card className="mt-5">
                     <Card.Body>
                         <Card.Title>Undertime List</Card.Title>
@@ -151,6 +187,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
                                         return (
                                             <tr key={ut.id}>
+                                           
                                                 <td>{ut.ut_no}</td>
                                                 <td>{ut.emp_fullname}</td>
                                                 <td>{ut.ut_date}</td>
@@ -161,6 +198,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                                 <td>
                                                     <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
                                                     <Button onClick={() => handleEditClick(ut.id)} color="yellow" className="ms-3">Edit</Button>
+                                                    <Button onClick={() => handleDelete(ut.id)} color="red" className="ms-3">Delete</Button>
                                                 </td>
                                             </tr>
                                         );
@@ -217,35 +255,49 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                             )}
                         </Modal>
                         <Modal opened={editOpened} onClose={close2} title="Edit Request Details" centered>
-                            {selectedUT && (
-                                <>
-                                    <label>Reference No.</label>
-                                    <Input value={selectedUT.ut_no || ''} disabled />
+                            <form onSubmit={handleEditSubmit}>
 
-                                    <label>UT Status</label>
-                                    <Select placeholder={selectedUT.mf_status_name || ''} disabled />
 
-                                    <label>UT Date Requested</label>
-                                    <DateInput clearable
-                                        name="ut_date"
-                                        valueFormat="YYYY MM DD" placeholder={selectedUT.ut_date || ''} onChange={(value) => setSelectedUT({ ...selectedUT, ut_date: value })} />
+                                {selectedUT && (
+                                    <>
+                                        <label>Reference No.</label>
+                                        <Input value={selectedUT.ut_no || ''} disabled />
 
-                                    <label>UT Time Requested</label>
+                                        <label>UT Status</label>
+                                        <Select placeholder={selectedUT.mf_status_name || ''} disabled />
 
-                                    <TimeInput
-                                        label="Time"
-                                        name="ut_time"
+                                        <label>UT Date Requested</label>
+                                        <DateInput
+                                            name="ut_date"
+                                            value={values.ut_date}
+                                            placeholder={selectedUT.ut_date || ''}
+                                            onChange={(value) => {
+                                                if (value) {
+                                                    const formattedDate = value.toLocaleDateString('en-CA');
+                                                    handleChange("ut_date", formattedDate);
+                                                } else {
+                                                    handleChange("ut_date", '');
+                                                }
+                                            }}
+                                        />
 
-                                        ref={ref}
-                                        rightSection={pickerControl}
-                                        onChange={(value) => setSelectedUT({ ...selectedUT, ut_time: value })}
-                                        style={{ width: 125 }}
-                                    />
-                                    <label>UT Reason</label>
-                                    <Textarea value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
-                                    <Button className="mt-3" color="teal" onClick={handleEditSubmit}>Submit</Button>
-                                </>
-                            )}
+                                        <label>UT Time Requested</label>
+
+                                        <TimeInput
+                                            label="Time"
+                                            name="ut_time"
+                                            value={values.ut_time}
+                                            ref={ref}
+                                            rightSection={pickerControl}
+                                            onChange={(event) => handleChange(event.target.name, event.target.value)}
+                                            style={{ width: 125 }}
+                                        />
+                                        <label>UT Reason</label>
+                                        <Textarea value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
+                                        <Button type="submit" className="mt-3" color="teal">Submit</Button>
+                                    </>
+                                )}
+                            </form>
                         </Modal>
                     </Card.Body>
                 </Card>

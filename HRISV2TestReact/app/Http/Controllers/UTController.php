@@ -60,10 +60,11 @@ class UTController extends Controller
     public function editUTRequest(Request $request)
     {
         $ut = UTModel::where('ut_no', $request->ut_no)->first();
+        $user =Auth::user()->emp_no;
         $request->validate([
             'ut_date' => 'required',
             'ut_time' => 'required',
-            'ut_reason'
+            'ut_reason' 
         ], [
             'ut_date.required' => 'date is required',
             'ut_time.required' => 'time is required',
@@ -71,8 +72,11 @@ class UTController extends Controller
         $ut->ut_date = $request->ut_date;
         $ut->ut_time = $request->ut_time;
         $ut->ut_reason = $request->ut_reason;
+        $ut->updated_by = $user;
+        $ut->updated_date = Carbon::now();
         $ut->save();
-        return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut], 200);
+        /* return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut]); */
+        return redirect()->intended('/UT_Module/ut_entry');
     }
 
     public function viewUTRequest($id){
@@ -82,6 +86,15 @@ class UTController extends Controller
         'viewUTRequest' => $viewUTRequest,
     ]);
     }
+
+    public function deleteUTRequest($id){
+        $deleteUTRequest = UTModel::findorfail($id);
+        $deleteUTRequest->delete();
+        return redirect()->intended('/UT_Module/ut_entry');
+    }
+
+
+    /* APPROVERS */
     public function UTApprList()
     {
         $apprvID = Auth::user()->name;
@@ -95,9 +108,14 @@ class UTController extends Controller
                     ->orWhere('ut_status_id', '3');
             })
             ->paginate(10);
-        return view('/UT_Module/ut_appr_list', compact('appr_pendings', 'appr_updated'));
+            return Inertia::render('UT_Module/ut_appr_list', [
+                'UTPendingList' => $appr_pendings,
+                'UTUpdatedList' => $appr_updated
+            ]);
     }
-    public function updateUTDisplayRequest($id)
+
+ 
+    /* public function updateUTDisplayRequest($id)
     {
 
         $selectedRequest = UTModel::findorFail($id);
@@ -130,5 +148,5 @@ class UTController extends Controller
     {
         $selectedUpdatedRequest = UTModel::findorFail($id);
         return view('/UT_Module/ut_appr_updated', compact('selectedUpdatedRequest'));
-    }
+    } */
 }
