@@ -27,3 +27,4 @@ Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
 Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
 
 Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList']);
+Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUTRequest']);

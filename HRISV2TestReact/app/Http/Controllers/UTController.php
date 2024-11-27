@@ -15,14 +15,14 @@ use Inertia\Inertia;
 class UTController extends Controller
 {
     public function index()
-    {   
+    {
         $currentUser = Auth::user()->name;
         $utList = UTModel::where('emp_fullname', $currentUser)->paginate(3);
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList
         ]);
     }
-    
+
     public function UTEntry(Request $request): RedirectResponse
     {
         $request->validate([
@@ -60,11 +60,11 @@ class UTController extends Controller
     public function editUTRequest(Request $request)
     {
         $ut = UTModel::where('ut_no', $request->ut_no)->first();
-        $user =Auth::user()->emp_no;
+        $user = Auth::user()->emp_no;
         $request->validate([
             'ut_date' => 'required',
             'ut_time' => 'required',
-            'ut_reason' 
+            'ut_reason'
         ], [
             'ut_date.required' => 'date is required',
             'ut_time.required' => 'time is required',
@@ -79,15 +79,17 @@ class UTController extends Controller
         return redirect()->intended('/UT_Module/ut_entry');
     }
 
-    public function viewUTRequest($id){
+    public function viewUTRequest($id)
+    {
         $viewUTRequest = UTModel::findorfail($id);
-       /*  dd("puke", $id, $viewUTRequest); */
-       return Inertia::render('UT_Module/ut_entry', [
-        'viewUTRequest' => $viewUTRequest,
-    ]);
+        /*  dd("puke", $id, $viewUTRequest); */
+        return Inertia::render('UT_Module/ut_entry', [
+            'viewUTRequest' => $viewUTRequest,
+        ]);
     }
 
-    public function deleteUTRequest($id){
+    public function deleteUTRequest($id)
+    {
         $deleteUTRequest = UTModel::findorfail($id);
         $deleteUTRequest->delete();
         return redirect()->intended('/UT_Module/ut_entry');
@@ -99,6 +101,7 @@ class UTController extends Controller
     {
         $apprvID = Auth::user()->name;
         $appr_pendings = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->where('ut_status_id', '1')->paginate(10);
+
         $appr_updated = UTModel::where(function ($query) use ($apprvID) {
             $query->where('first_apprv_name', $apprvID)
                 ->orWhere('sec_apprv_name', $apprvID);
@@ -108,19 +111,13 @@ class UTController extends Controller
                     ->orWhere('ut_status_id', '3');
             })
             ->paginate(10);
-            return Inertia::render('UT_Module/ut_appr_list', [
-                'UTPendingList' => $appr_pendings,
-                'UTUpdatedList' => $appr_updated
-            ]);
+        return Inertia::render('UT_Module/ut_appr_list', [
+            'UTPendingList' => $appr_pendings,
+            'UTUpdatedList' => $appr_updated,
+        ]);
     }
 
- 
-    /* public function updateUTDisplayRequest($id)
-    {
 
-        $selectedRequest = UTModel::findorFail($id);
-        return view('/UT_Module/ut_appr_pending', compact('selectedRequest'));
-    }
     public function updateUTRequest(Request $request, $id)
     {
         $currentUser = Auth::user()->emp_no;
@@ -144,6 +141,26 @@ class UTController extends Controller
         ]);
     }
 
+    public function approveAll(Request $request)
+    {
+        $currentUser = Auth::user()->emp_no;
+        $validated = $request->validate(['action' => 'required',]);
+        $action = $validated['action'];
+        if ($action === 'approve') {
+            UTModel::where('ut_status_id', '1')->update(['ut_status_id' => '2']);
+        } 
+        else 
+        {
+            UTModel::where('ut_status_id', '1')->update(['ut_status_id' => '2']);
+        }
+    }
+    /* public function updateUTDisplayRequest($id)
+    {
+
+        $selectedRequest = UTModel::findorFail($id);
+        return view('/UT_Module/ut_appr_pending', compact('selectedRequest'));
+    }
+   
     public function updatedUTDisplayRequest($id)
     {
         $selectedUpdatedRequest = UTModel::findorFail($id);

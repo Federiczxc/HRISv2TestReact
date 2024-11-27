@@ -162,60 +162,65 @@ export default function ut_dashboard({ users, companies, approvers }) {
                                             </td>
                                             <td>{isApprover === 1 ? 'Yes' : 'No'}</td>
                                             <td className="text-center">
-                                                {editMode[user.id] ? (
-                                                    <>
-                                                        <Button
-                                                            className="btn btn-success btn-sm"
-                                                            onClick={() =>
-                                                                handleSaveRow(user.id, {
-                                                                    name: user.name,
-                                                                    company: user.company,
-                                                                    first_appr: user.first_appr,
-                                                                    second_appr: user.second_appr,
-                                                                })
-                                                            }
-                                                        >
-                                                            Save
-                                                        </Button>
-                                                        <Button
-                                                            className="btn btn-secondary btn-sm"
-                                                            onClick={() =>
-                                                                setEditMode((prev) => ({
-                                                                    ...prev,
-                                                                    [user.id]: false,
-                                                                }))
-                                                            }
-                                                            style={{ marginLeft: "10px" }}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Button
-                                                            className="btn btn-warning btn-sm"
-                                                            onClick={() =>
-                                                                setEditMode((prev) => ({
-                                                                    ...prev,
-                                                                    [user.id]: true,
-                                                                }))
-                                                            }
-                                                        >
-                                                            Edit
-                                                        </Button>
+                                                {editMode[user.id] ?
+                                                    (
+                                                        <>
+                                                            <Button
+                                                                className="btn btn-success btn-sm"
+                                                                onClick={() =>
+                                                                    handleSaveRow(user.id, {
+                                                                        name: user.name,
+                                                                        company: user.company,
+                                                                        first_appr: user.first_appr,
+                                                                        second_appr: user.second_appr,
+                                                                    })
+                                                                }
+                                                            >
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                className="btn btn-secondary btn-sm"
+                                                                onClick={() =>
+                                                                    setEditMode((prev) => ({
+                                                                        ...prev,
+                                                                        [user.id]: false,
+                                                                    }))
+                                                                }
+                                                                style={{ marginLeft: "10px" }}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </>
+                                                    ) :
+                                                    (
+                                                        <>
+                                                            <Button
+                                                                className="btn btn-warning btn-sm"
+                                                                onClick={() =>
+                                                                    setEditMode((prev) => ({
+                                                                        ...prev,
+                                                                        [user.id]: true,
+                                                                    }))
+                                                                }
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                            {/* Set Approver Button */}
+                                                            <Button
+                                                                className={`btn btn-sm ${isApprover === 1 ? 'btn-danger' : 'btn-success'}`}
+                                                                style={{ color: 'black', width: '155px', marginLeft: '10px' }}
+                                                                onClick={() =>
+                                                                    toggleApproverStatus(user.id, setIsApprover)
+                                                                }
+                                                            >
+                                                                {isApprover === 1 ? 'Unset Approver' : 'Set Approver'}
+                                                            </Button>
 
-                                                        {/* Set Approver Button */}
-                                                        <Button
-                                                            className={`btn btn-sm ${isApprover === 1 ? 'btn-danger' : 'btn-success'}`}
-                                                            style={{ color: 'black', width: '155px', marginLeft: '10px' }}
-                                                            onClick={() =>
-                                                                toggleApproverStatus(user.id, setIsApprover)
-                                                            }
-                                                        >
-                                                            {isApprover === 1 ? 'Unset Approver' : 'Set Approver'}
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                        </>
+                                                    )
+                                                }
+                                                
+
                                             </td>
                                         </tr>
                                     );
