@@ -25,20 +25,23 @@ class UserController extends Controller
         /* return view('/login'); */
         return Inertia::render('login');
     }
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request): \Illuminate\Http\RedirectResponse|\Inertia\Response
     {
         $request->validate([
             'name' => 'required',
             'password' => 'required',
         ]);
+
         if (Auth::attempt(['name' => $request->name, 'password' => $request->password])) {
 
             return redirect()->intended('/UT_Module/ut_dashboard');
         }
-
-        return Inertia::render('Login', [
-            'errors' => ['name' => 'The provided credentials are incorrect.']
+       
+        return Inertia::render('login', [
+            'errors' => ['authError' => 'The provided credentials are incorrect.']
         ]);
+      
+        
     }
 
     public function logout(Request $request)

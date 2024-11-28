@@ -30,12 +30,12 @@ class UTController extends Controller
             'ut_time' => 'required',
             'ut_reason'
         ], [
-            'ut_date.required' => 'Name is required',
-            'ut_time.required' => 'Company is required',
+            'ut_date.required' => 'Date is required',
+            'ut_time.required' => 'Time is required',
         ]);
         $user = Auth::user();
         $lastUtEntry = UTModel::orderBy('ut_no', 'desc')->first();
-        $newUtNo = 'UT-' . (optional($lastUtEntry)->ut_no ? ((int) str_replace('UT-', '', $lastUtEntry->ut_no) + 1) : 1001);
+        $newUtNo = 'UT-' . sprintf('%09d', optional($lastUtEntry)->ut_no ? ((int) str_replace('UT-', '', $lastUtEntry->ut_no) + 1) : 1);
         $ut_entry = UTModel::create([
             'emp_no' => $user->emp_no,
             'ut_no' => $newUtNo,
@@ -92,7 +92,7 @@ class UTController extends Controller
     {
         $deleteUTRequest = UTModel::findorfail($id);
         $deleteUTRequest->delete();
-        return redirect()->intended('/UT_Module/ut_entry');
+        return back()->with('message', 'UT request deleted successfully!');
     }
 
 
@@ -134,25 +134,39 @@ class UTController extends Controller
             'ut_status_id' => $ut_status_id,
             'mf_status_name' => $statusname,
             'remarks' => $remarks,
-            'updated_date' => Carbon::now(),
             'approved_by' => $currentUser,
             'approved_date' => Carbon::now(),
-            'updated_by' => $currentUser
+            'updated_by' => $currentUser,
+            'updated_date' => Carbon::now(),
+
         ]);
     }
 
-    public function approveAll(Request $request)
+    public function updateAll(Request $request)
     {
         $currentUser = Auth::user()->emp_no;
         $validated = $request->validate(['action' => 'required',]);
         $action = $validated['action'];
         if ($action === 'approve') {
-            UTModel::where('ut_status_id', '1')->update(['ut_status_id' => '2']);
-        } 
-        else 
-        {
-            UTModel::where('ut_status_id', '1')->update(['ut_status_id' => '2']);
+            UTModel::where('ut_status_id', '1')->update([
+                'ut_status_id' => '2',
+                'mf_status_name' => 'Approved',
+                'approved_by' => $currentUser,
+                'approved_date' => Carbon::now(),
+                'updated_by' => $currentUser,
+                'updated_date' => Carbon::now()
+            ]);
+        } elseif ($action === 'rejected') {
+            UTModel::where('ut_status_id', '1')->update([
+                'ut_status_id' => '3',
+                'mf_status_name' => 'Rejected',
+                'approved_by' => $currentUser,
+                'approved_date' => Carbon::now(),
+                'updated_by' => $currentUser,
+                'updated_date' => Carbon::now()
+            ]);
         }
+        return redirect()->intended('/UT_Module/ut_appr_list');
     }
     /* public function updateUTDisplayRequest($id)
     {

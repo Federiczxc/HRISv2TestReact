@@ -1,9 +1,7 @@
 import AppLayout from "@/Layout/AppLayout";
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Table, Form } from 'react-bootstrap';
-import { Link } from '@inertiajs/react';
-import { createTheme, MantineProvider } from '@mantine/core';
-
+import { notifications } from '@mantine/notifications';
 export default function ut_dashboard({ users, companies, approvers }) {
 
     const { data, current_page, last_page, next_page_url, prev_page_url } = users;
@@ -17,12 +15,32 @@ export default function ut_dashboard({ users, companies, approvers }) {
 
     const toggleApproverStatus = async (userId, setUserStatus) => {
         console.log(approverOptions);
-
+        const getUserData = userData.find((user)=> user.id === userId);
         try {
             const response = await axios.post(`/UT_Module/ut_dashboard/setApprove/${userId}`, {
                 _method: 'POST',
             });
             setUserStatus(Number(response.data.isApprover));
+
+            if (response.data.isApprover == 1) {
+                notifications.show({
+                    title: 'Success',
+                    message: `You successfully set ${getUserData.name} as an Approver!`,
+                    position: 'top-center',
+                    color: 'green',
+                    autoClose: 2000,
+                })
+            }
+            else if (response.data.isApprover == 0) {
+                notifications.show({
+                    title: 'Success',
+                    message: `You removed ${getUserData.name}'s approver access`,
+                    position: 'top-center',
+                    color: 'red ',
+                    autoClose: 2000,
+                })
+            }
+
         } catch (error) {
             console.error('Error updating approver status:', error);
             alert('An error occurred while updating the status.');
@@ -42,12 +60,60 @@ export default function ut_dashboard({ users, companies, approvers }) {
             first_appr: userToUpdate.first_appr,
             second_appr: userToUpdate.second_appr,
         };
+        if (updatedFields.first_appr == updatedFields.second_appr) {
+            notifications.show({
+                title: 'Error',
+                message: `You have entered the same approver please change!`,
+                position: 'top-center',
+                color: 'red',
+                autoClose: 2000,
+            })
+            return;
+        }
+        if (updatedFields.first_appr === updatedFields.name || updatedFields.second_appr === updatedFields.name) {
+            notifications.show({
+                title: 'Error',
+                message: `You cannot assign the user as its own approver!`,
+                position: 'top-center',
+                color: 'red',
+                autoClose: 2000,
+            })
+            return;
+        }
         try {
             const response = await axios.post(
                 `/UT_Module/ut_dashboard/edit/${userId}`,
                 updatedFields
             );
-            setUserData((prevData) =>
+
+            if (!updatedFields.first_appr) {
+                notifications.show({
+                    title: 'Success',
+                    message: `You successfully set ${updatedFields.name}'s Approver to ${updatedFields.second_appr}`,
+                    position: 'top-center',
+                    color: 'green',
+                    autoClose: 2000,
+                })
+            }
+            else if (!updatedFields.second_appr) {
+                notifications.show({
+                    title: 'Success',
+                    message: `You successfully set ${updatedFields.name}'s Approver to ${updatedFields.first_appr}`,
+                    position: 'top-center',
+                    color: 'green',
+                    autoClose: 2000,
+                })
+            }
+            else {
+                notifications.show({
+                    title: 'Success',
+                    message: `You successfully set ${updatedFields.name}'s Approvers to ${updatedFields.first_appr} and ${updatedFields.second_appr}`,
+                    position: 'top-center',
+                    color: 'green',
+                    autoClose: 2000,
+                })
+            }
+            setUserData((prevData) => // renders the data para realtime
                 prevData.map((user) =>
                     user.id === userId
                         ? {
@@ -55,18 +121,11 @@ export default function ut_dashboard({ users, companies, approvers }) {
                             ...updatedFields,
                             first_apprv_name: approvers.find((app) => app.name === updatedFields.first_appr)?.name,
                             sec_apprv2_name: approvers.find((app) => app.name === updatedFields.second_appr)?.name,
-                        }
+                        }   
                         : user
                 )
             );
-            // Update the user data in the state after saving the changes
-            /* setUserData((prevData) =>
-                prevData.map((user) =>
-                    user.id === userId ? { ...user, ...updatedFields } : user
-                )
-            ); */
             setEditMode((prev) => ({ ...prev, [userId]: false })); // Exit edit mode
-            console.log("titietetete" + response.data);
 
         } catch (error) {
             console.error("Error updating user details:", error);
@@ -133,7 +192,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                                                     <Form.Select
                                                         value={user.first_appr}
                                                         onChange={(e) => handleFieldChange(user.id, 'first_appr', e.target.value)}
-                                                    >   <option> Please select</option>
+                                                    >   <option value=""> </option>
                                                         {approvers.map((option) => (
                                                             <option key={option.id} value={option.name}>
                                                                 {option.name}
@@ -149,7 +208,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                                                     <Form.Select
                                                         value={user.second_appr}
                                                         onChange={(e) => handleFieldChange(user.id, 'second_appr', e.target.value)}
-                                                    > <option> Please select</option>
+                                                    > <option value=""> </option>
                                                         {approvers.map((option) => (
                                                             <option key={option.id} value={option.name}>
                                                                 {option.name}
@@ -219,7 +278,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                                                         </>
                                                     )
                                                 }
-                                                
+
 
                                             </td>
                                         </tr>

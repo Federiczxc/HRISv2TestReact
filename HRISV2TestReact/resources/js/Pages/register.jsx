@@ -1,4 +1,4 @@
-// resources/js/Pages/Register.jsx
+
 
 import React, { useState } from 'react';
 

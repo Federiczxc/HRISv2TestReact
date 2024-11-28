@@ -1,5 +1,3 @@
-import '@mantine/core/styles.css';
-import '@mantine/dates/styles.css';
 import React, { useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
@@ -8,6 +6,7 @@ import { ActionIcon, rem, Textarea, Modal, Button, Input, Select, Checkbox } fro
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock } from '@tabler/icons-react';
 import { Inertia } from '@inertiajs/inertia';
+import { notifications } from '@mantine/notifications';
 
 export default function ut_entry({ UTList, viewUTRequest }) {
     const [values, setValues] = useState({
@@ -27,10 +26,24 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         console.log('Form Values:', values); // Log the form data
         router.post('/UT_Module/ut_entry', values, {
             onError: (errors) => {
-                console.error('Submission Errors:', errors); // Log errors from the server
+                console.error('Submission Errors:', errors);
+                notifications.show({
+                    title: 'Error',
+                    message: 'Failed to submit your request. Please try again.',
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                }); 
             },
             onSuccess: () => {
-                console.log('Form submitted successfully'); // Success message
+                console.log('Form submitted successfully');
+                notifications.show({
+                    title: 'Success',
+                    message: 'Entry Successful.',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                }); 
             },
         });
     }
@@ -39,8 +52,14 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         Inertia.delete(`/UT_Module/ut_entry/${utId}`, {
             preserveState: true, // Prevents full page reload
             onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: 'Delete Successful.',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                }); 
                 console.log('Record deleted successfully');
-                // Filter out the deleted item from the state
                 setUTList((prevUTList) => ({
                     ...prevUTList,
                     data: prevUTList.data.filter((ut) => ut.id !== utId),
@@ -81,7 +100,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     };
 
     const formatDate = (date) => {
-        if (!date) return ''; // Return an empty string if no date is provided
+        if (!date) return ''; 
         const d = new Date(date);
         const year = d.getFullYear();
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -90,13 +109,11 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     };
 
     const handleViewClick = (utId) => {
-        // Open the modal with the passed UT data
         const utData = UTList.data.find((ut) => ut.id === utId);
         setSelectedUT(utData);
         open();
     }
     const handleEditClick = (utId) => {
-        // Open the modal with the passed UT data
         const utData = UTList.data.find((ut) => ut.id === utId);
         setSelectedUT(utData);
         open2();
@@ -128,12 +145,24 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     <Card.Body>
                         <form onSubmit={handleSubmit}>
                             <DateInput
-                                label="Pick date and time"
+                                label="Date"
                                 name="ut_date"
                                 value={values.ut_date}
                                 placeholder="Pick date"
                                 onChange={(value) => {
                                     if (value) {
+                                        const selectedDate = new Date(value);
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        if (selectedDate < today){
+                                            notifications.show({
+                                                title: 'Warning',
+                                                message: `You are currently late filing a UT Request`,
+                                                position: 'top-center',
+                                                color: 'yellow',
+                                                autoClose: 5000,
+                                            })
+                                        }
                                         const formattedDate = value.toLocaleDateString('en-CA');
                                         handleChange("ut_date", formattedDate);
                                     } else {
@@ -171,10 +200,10 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                         <Table striped>
                             <thead>
                                 <tr>
-                                    <th>UT No</th>
+                                    <th>Reference No</th>
                                     <th>Name</th>
-                                    <th>Request Date</th>
-                                    <th>Request Time</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
                                     <th>Reason</th>
                                     <th>Status</th>
                                     <th>Date File</th>
@@ -192,7 +221,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                                 <td>{ut.emp_fullname}</td>
                                                 <td>{ut.ut_date}</td>
                                                 <td>{formatTime(ut.ut_time)}</td>
-                                                <td>{ut.ut_reason}</td>
+                                                <td style={{ maxWidth: '200px', overflow: 'hidden',  whiteSpace: 'normal', textOverflow: 'ellipsis'}}>{ut.ut_reason}</td>
                                                 <td>{ut.mf_status_name}</td>
                                                 <td>{formatDate(ut.created_date)}</td>
                                                 <td>
