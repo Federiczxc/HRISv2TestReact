@@ -1,21 +1,25 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
-import { Container, Card, Table, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Textarea, Modal, Button, Text, Select, Tabs, Pagination } from '@mantine/core';
+import { Container, Card, Form } from 'react-bootstrap';
+import { ActionIcon, rem, Textarea, Modal, Button, Text, Select, Tabs, Table, Pagination } from '@mantine/core';
 import { IconClock } from '@tabler/icons-react';
 import { Inertia } from '@inertiajs/inertia';
 import { modals } from '@mantine/modals';
+import { Link } from '@inertiajs/react';
 export default function ut_entry({ UTPendingList, UTUpdatedList }) {
 
     /* UT Pending List Declaration */
-    const { data,
-        current_page,
-        last_page,
-        next_page_url,
-        prev_page_url } = UTPendingList;
-    const [requestData, setRequestData] = useState(data || []);
+    const { data: pendingData,
+        current_page: pendingPage,
+        last_page: pendingLastPage,
+        next_page_url: pendingNextPageUrl,
+        prev_page_url: pendingPrevPageUrl } = UTPendingList;
+
+
+    const [requestData, setRequestData] = useState(pendingData || []);
+
     useEffect(() => {
-        setRequestData(UTPendingList.data,);
+        setRequestData(pendingData);
     }, [UTPendingList]);
 
     /* UT Updated List Declaration */
@@ -54,7 +58,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
         };
         try {
 
-            const response = await axios.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields);
+            await axios.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields);
             setRequestData((prevData) =>
                 prevData.filter((utRequest) => utRequest.id !== requestID)
             );
@@ -118,23 +122,27 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
             [name]: name === "ut_date" ? new Date(value) : value, // Convert ut_date to Date object
         }));
     }
+*/
+    const handlePendingPageChange = async (direction) => {
+        const newPageUrl = direction === "next" ? pendingNextPageUrl : pendingPrevPageUrl;
+        if (newPageUrl) {
+            Inertia.get(newPageUrl, {}, {
+                preserveState: true,
+                preserveScroll: true,
+            })
+        }
+    }
 
-    const handlePageChange = async (direction) => {
-        if (tabValue === "pending") {
-            const newPageUrl = direction === "next" ? next_page_url : prev_page_url;
-            if (newPageUrl) {
-                const response = await axios.get(newPageUrl);
-                setRequestData(response.data);
-            }
+    const handleUpdatedPageChange = async (direction) => {
+        const newPageUrl2 = direction === "next" ? updatedNextPageUrl : updatedPrevPageUrl;
+        if (newPageUrl2) {
+            Inertia.get(newPageUrl2, {}, {
+                preserveState: true,
+                preserveScroll: true,
+            })
         }
-        else {
-            const newPageUrl = direction === "next" ? updatedNextPageUrl : updatedPrevPageUrl;
-            if (newPageUrl) {
-                const response = await axios.get(newPageUrl);
-                setRequestData2(response.data);
-            }
-        }
-    } */
+
+    }
     const openModal = () => modals.openConfirmModal({
         title: 'Please Confirm',
         children: (
@@ -163,9 +171,20 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
     });
 
     const handleAction = (action) => {
+
         Inertia.post('ut_appr_list', { action }, {
-        })
-        console.log("puke", action);
+            onSuccess: () => {
+                alert("yaa");
+                console.log("puke2", action);
+
+            },
+            onError: () => {
+                alert("waaa");
+                console.log("puke3", action);
+
+            },
+        });
+
     };
 
 
@@ -183,10 +202,12 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
         <AppLayout>
             <Container className="mt-3">
                 <Card className="mt-5">
-                    <Tabs color="lime" radius="xs" defaultValue="pending">
+                    <Tabs color="lime" radius="xs" defaultValue="pending" value={tabValue} onChange={setTabValue}>
                         <Tabs.List>
                             <Tabs.Tab value="pending">
                                 Pending
+                                {tabValue}
+
                             </Tabs.Tab>
                             <Tabs.Tab value="updated">
                                 Updated
@@ -199,31 +220,32 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
                                 <div>
                                     <Button onClick={() => openModal()} color='green'> Approve all</Button>
                                     <Button onClick={() => openModal2()} color='red'> Reject all</Button></div>
-                                <Table striped>
-                                    <thead>
-                                        <tr>
-                                            <th>UT No</th>
-                                            <th>Name</th>
-                                            <th>Date</th>
-                                            <th>Time</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Date File</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data && data.length > 0 ?
+                                <Table striped highlightOnHover>
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th>UT No</Table.Th>
+                                            <Table.Th>Name</Table.Th>
+                                            <Table.Th>Date</Table.Th>
+                                            <Table.Th>Time</Table.Th>
+                                            <Table.Th>Reason</Table.Th>
+                                            <Table.Th>Status</Table.Th>
+                                            <Table.Th>Date File</Table.Th>
+                                            <Table.Th>Action</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {pendingData && pendingData.length > 0 ?
                                             (
                                                 requestData.map((ut) => {
+
                                                     return (
-                                                        <tr key={ut.id}>
-                                                            <td>{ut.ut_no}</td>
-                                                            <td>{ut.emp_fullname}</td>
-                                                            <td>{ut.ut_date}</td>
-                                                            <td>{formatTime(ut.ut_time)}</td>
-                                                            <td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</td>
-                                                            <td>
+                                                        <Table.Tr key={ut.id}>
+                                                            <Table.Td>{ut.ut_no}</Table.Td>
+                                                            <Table.Td>{ut.emp_fullname}</Table.Td>
+                                                            <Table.Td>{ut.ut_date}</Table.Td>
+                                                            <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
+                                                            <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
+                                                            <Table.Td>
                                                                 {editMode[ut.id] ? (
                                                                     <Form.Select
                                                                         value={requestData.find((utRequest) => utRequest.id === ut.id)?.ut_status_id || ''}
@@ -236,9 +258,9 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
                                                                 ) : (
                                                                     ut.mf_status_name
                                                                 )}
-                                                            </td>
-                                                            <td>{formatDate(ut.created_date)}</td>
-                                                            <td>
+                                                            </Table.Td>
+                                                            <Table.Td>{formatDate(ut.created_date)}</Table.Td>
+                                                            <Table.Td>
                                                                 {editMode[ut.id] ?
                                                                     (
                                                                         <>
@@ -279,27 +301,30 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
                                                                         </>
                                                                     )
                                                                 }
-                                                            </td>
-                                                        </tr>
+                                                            </Table.Td>
+                                                        </Table.Tr>
                                                     );
+
                                                 })
                                             ) : (
                                                 <p1> aaaaaaaaaaaaaaaaa</p1>
                                             )}
-                                    </tbody>
+                                    </Table.Tbody>
                                     {/* Pagination */}
                                 </Table>
+
+
                                 <div className="d-flex justify-content-between mt-4">
                                     <Button
-                                        disabled={!prev_page_url}
-                                        onClick={() => (window.location.href = prev_page_url)}
+                                        disabled={!pendingPrevPageUrl}
+                                        onClick={() => handlePendingPageChange("prev")}
                                     >
                                         Previous
                                     </Button>
-                                    <span>Page {current_page} of {last_page}</span>
+                                    <span>Pagdade {pendingPage} of {pendingLastPage}</span>
                                     <Button
-                                        disabled={!next_page_url}
-                                        onClick={() => (window.location.href = next_page_url)}
+                                        disabled={!pendingNextPageUrl}
+                                        onClick={() => handlePendingPageChange("next")}
                                     >
                                         Next
                                     </Button>
@@ -322,54 +347,54 @@ export default function ut_entry({ UTPendingList, UTUpdatedList }) {
                         <Tabs.Panel value="updated">
                             <Card.Body>
                                 <Card.Title>Undertime Updated List</Card.Title>
-                                <Table striped>
-                                    <thead>
-                                        <tr>
-                                            <th>UT No</th>
-                                            <th>Name</th>
-                                            <th>Request Date</th>
-                                            <th>Request Time</th>
-                                            <th>Reason</th>
-                                            <th>Status</th>
-                                            <th>Date File</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                <Table striped highlightOnHover>
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th>UT No</Table.Th>
+                                            <Table.Th>Name</Table.Th>
+                                            <Table.Th>Date</Table.Th>
+                                            <Table.Th>Time</Table.Th>
+                                            <Table.Th>Reason</Table.Th>
+                                            <Table.Th>Status</Table.Th>
+                                            <Table.Th>Date File</Table.Th>
+                                            <Table.Th>Action</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
                                         {requestData2 && requestData2.length > 0 ? (
                                             requestData2.map((ut2) => {
                                                 return (
-                                                    <tr key={ut2.id}>
-                                                        <td>{ut2.ut_no}</td>
-                                                        <td>{ut2.emp_fullname}</td>
-                                                        <td>{ut2.ut_date}</td>
-                                                        <td>{formatTime(ut2.ut_time)}</td>
-                                                        <td>{ut2.ut_reason}</td>
-                                                        <td>{ut2.mf_status_name}</td>
-                                                        <td>{formatDate(ut2.created_date)}</td>
-                                                        <td>
+                                                    <Table.Tr key={ut2.id}>
+                                                        <Table.Td>{ut2.ut_no}</Table.Td>
+                                                        <Table.Td>{ut2.emp_fullname}</Table.Td>
+                                                        <Table.Td>{ut2.ut_date}</Table.Td>
+                                                        <Table.Td>{formatTime(ut2.ut_time)}</Table.Td>
+                                                        <Table.Td>{ut2.ut_reason}</Table.Td>
+                                                        <Table.Td>{ut2.mf_status_name}</Table.Td>
+                                                        <Table.Td>{formatDate(ut2.created_date)}</Table.Td>
+                                                        <Table.Td>
                                                             <Button onClick={() => handleViewClick(ut2.id)} className="btn btn-primary btn-sm">View</Button>
-                                                        </td>
-                                                    </tr>
+                                                        </Table.Td>
+                                                    </Table.Tr>
                                                 );
                                             })
                                         ) : (
                                             console.log(UTUpdatedList)
                                         )}
-                                    </tbody>
+                                    </Table.Tbody>
                                     {/* Pagination */}
                                 </Table>
                                 <div className="d-flex justify-content-between mt-4">
                                     <Button
                                         disabled={!updatedPrevPageUrl}
-                                        onClick={() => (window.location.href = updatedPrevPageUrl)}
+                                        onClick={() => handleUpdatedPageChange("prev")}
                                     >
                                         Previous
                                     </Button>
                                     <span>Page {updatedPage} of {updatedLastPage}</span>
                                     <Button
                                         disabled={!updatedNextPageUrl}
-                                        onClick={() => (window.location.href = updatedNextPageUrl)}
+                                        onClick={() => handleUpdatedPageChange("next")}
                                     >
                                         Next
                                     </Button>

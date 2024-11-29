@@ -22,12 +22,12 @@ Route::post('/register', [UserController::class, 'store']);
 Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboard'])->middleware('auth');
 
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
-Route::get('/UT_Module/ut_entry/', [UTController::class, 'index'])->middleware('auth');
+Route::get('/UT_Module/ut_entry/', [UTController::class, 'index'])->middleware('auth')->name('ut.entry');
 Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest'])->middleware('auth');
-Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest']);
+Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest'])->name('delete.ut');
 Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
 Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
 
-Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList'])->middleware('auth');
+Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList'])->middleware('auth')->name('apprlist.show');
 Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUTRequest']);
 Route::post('/UT_Module/ut_appr_list', [UTController::class, 'updateAll'])->name('update.all');

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
-import { Container, Card, Table, Form} from 'react-bootstrap';
+import { Container, Card, Table, Form } from 'react-bootstrap';
 import { ActionIcon, rem, Textarea, Modal, Button, Input, Select, Checkbox } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock } from '@tabler/icons-react';
@@ -15,6 +15,15 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         ut_reason: '',
     })
     const [selectedUT, setSelectedUT] = useState(viewUTRequest);
+    /* const [UTListDisplay, setUTListDisplay] = useState({
+        data: UTList,  // Initial empty array for storing the data
+        current_page: 1,
+        last_page: 1,
+        next_page_url: null,
+        prev_page_url: null,
+    });
+
+    console.log(UTListDisplay.data); */
     function handleChange(name, value) {
         setValues((prevValues) => ({
             ...prevValues,
@@ -33,7 +42,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     color: 'red',
                     position: 'top-center',
                     autoClose: 5000,
-                }); 
+                });
             },
             onSuccess: () => {
                 console.log('Form submitted successfully');
@@ -43,14 +52,23 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     color: 'green',
                     position: 'top-center',
                     autoClose: 5000,
-                }); 
+                });
             },
         });
     }
 
-    const handleDelete = (utId) => {
-        Inertia.delete(`/UT_Module/ut_entry/${utId}`, {
-            preserveState: true, // Prevents full page reload
+    function handleDelete(utId) {
+        router.delete(`/UT_Module/ut_entry/${utId}`, {
+            onError: (errors) => {
+                notifications.show({
+                    title: 'Error',
+                    message: 'Failed to delete the entry.',
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+                console.error('Error:', errors);
+            },
             onSuccess: () => {
                 notifications.show({
                     title: 'Success',
@@ -58,19 +76,12 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     color: 'green',
                     position: 'top-center',
                     autoClose: 5000,
-                }); 
-                console.log('Record deleted successfully');
-                setUTList((prevUTList) => ({
-                    ...prevUTList,
-                    data: prevUTList.data.filter((ut) => ut.id !== utId),
-                }));
-            },
-            onError: (error) => {
-                console.error('Error deleting record:', error);
+                });
+    
+               
             },
         });
-    };
-    
+    }
 
     function handleEditSubmit(e) {
         e.preventDefault();
@@ -100,7 +111,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     };
 
     const formatDate = (date) => {
-        if (!date) return ''; 
+        if (!date) return '';
         const d = new Date(date);
         const year = d.getFullYear();
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -109,12 +120,12 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     };
 
     const handleViewClick = (utId) => {
-        const utData = UTList.data.find((ut) => ut.id === utId);
+        const utData = UTList.find((ut) => ut.id === utId);
         setSelectedUT(utData);
         open();
     }
     const handleEditClick = (utId) => {
-        const utData = UTList.data.find((ut) => ut.id === utId);
+        const utData = UTList.find((ut) => ut.id === utId);
         setSelectedUT(utData);
         open2();
     }
@@ -132,7 +143,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     const [editOpened, setEditOpened] = useState(false);
     const open2 = () => setEditOpened(true);
     const close2 = () => setEditOpened(false);
-    const { data, current_page, last_page, next_page_url, prev_page_url } = UTList;
+    const { current_page, last_page, next_page_url, prev_page_url } = UTList;
     const ref = useRef(null);
     const pickerControl = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
         <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
@@ -154,7 +165,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                         const selectedDate = new Date(value);
                                         const today = new Date();
                                         today.setHours(0, 0, 0, 0);
-                                        if (selectedDate < today){
+                                        if (selectedDate < today) {
                                             notifications.show({
                                                 title: 'Warning',
                                                 message: `You are currently late filing a UT Request`,
@@ -193,7 +204,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                         </form>
                     </Card.Body>
                 </Card>
-                                
+
                 <Card className="mt-5">
                     <Card.Body>
                         <Card.Title>Undertime List</Card.Title>
@@ -211,17 +222,17 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data && data.length > 0 ? (
-                                    data.map((ut) => {
+                                {UTList && UTList.length > 0 ? (
+                                    UTList.map((ut) => {
 
                                         return (
                                             <tr key={ut.id}>
-                                           
+
                                                 <td>{ut.ut_no}</td>
                                                 <td>{ut.emp_fullname}</td>
                                                 <td>{ut.ut_date}</td>
                                                 <td>{formatTime(ut.ut_time)}</td>
-                                                <td style={{ maxWidth: '200px', overflow: 'hidden',  whiteSpace: 'normal', textOverflow: 'ellipsis'}}>{ut.ut_reason}</td>
+                                                <td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</td>
                                                 <td>{ut.mf_status_name}</td>
                                                 <td>{formatDate(ut.created_date)}</td>
                                                 <td>

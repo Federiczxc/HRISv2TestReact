@@ -17,7 +17,7 @@ class UTController extends Controller
     public function index()
     {
         $currentUser = Auth::user()->name;
-        $utList = UTModel::where('emp_fullname', $currentUser)->paginate(3);
+        $utList = UTModel::where('emp_fullname', $currentUser)->get();
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList
         ]);
@@ -92,7 +92,8 @@ class UTController extends Controller
     {
         $deleteUTRequest = UTModel::findorfail($id);
         $deleteUTRequest->delete();
-        return back()->with('message', 'UT request deleted successfully!');
+
+        return redirect()->intended('/UT_Module/ut_entry');
     }
 
 
