@@ -27,6 +27,7 @@ Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest'])->
 Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest'])->name('delete.ut');
 Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
 Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
+Route::post('/UT_Module/ut_appr_list/edit', [UTController::class, 'editUTApprRequest']);
 
 Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList'])->middleware('auth')->name('apprlist.show');
 Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUTRequest']);

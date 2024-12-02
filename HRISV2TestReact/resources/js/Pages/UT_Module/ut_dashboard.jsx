@@ -81,7 +81,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
             return;
         }
         try {
-            const response = await axios.post(
+            await axios.post(
                 `/UT_Module/ut_dashboard/edit/${userId}`,
                 updatedFields
             );

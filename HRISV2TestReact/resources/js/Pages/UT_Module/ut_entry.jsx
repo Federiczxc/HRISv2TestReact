@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
-import { Container, Card, Table, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Textarea, Modal, Button, Input, Select, Checkbox } from '@mantine/core';
+import { Container, Card, Form } from 'react-bootstrap';
+import { ActionIcon, rem, Table, Textarea, Modal, Button, Input, Select, Pagination } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock } from '@tabler/icons-react';
 import { Inertia } from '@inertiajs/inertia';
@@ -14,6 +14,14 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         ut_time: '',
         ut_reason: '',
     })
+    const [activePage, setActivePage] = useState(1);
+    const itemsPerPage = 2;
+    const totalPages = Math.ceil(UTList.length / itemsPerPage);
+    const paginatedData = UTList.slice(
+        (activePage - 1) * itemsPerPage,
+        activePage * itemsPerPage
+    );
+
     const [selectedUT, setSelectedUT] = useState(viewUTRequest);
     /* const [UTListDisplay, setUTListDisplay] = useState({
         data: UTList,  // Initial empty array for storing the data
@@ -77,8 +85,8 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
-    
-               
+
+
             },
         });
     }
@@ -209,38 +217,38 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                     <Card.Body>
                         <Card.Title>Undertime List</Card.Title>
                         <Table striped>
-                            <thead>
-                                <tr>
-                                    <th>Reference No</th>
-                                    <th>Name</th>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Date File</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>Reference No</Table.Th>
+                                    <Table.Th>Name</Table.Th>
+                                    <Table.Th>Date</Table.Th>
+                                    <Table.Th>Time</Table.Th>
+                                    <Table.Th>Reason</Table.Th>
+                                    <Table.Th>Status</Table.Th>
+                                    <Table.Th>Date File</Table.Th>
+                                    <Table.Th>Action</Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
                             <tbody>
                                 {UTList && UTList.length > 0 ? (
-                                    UTList.map((ut) => {
+                                    paginatedData.map((ut) => {
 
                                         return (
-                                            <tr key={ut.id}>
+                                            <Table.Tr key={ut.id}>
 
-                                                <td>{ut.ut_no}</td>
-                                                <td>{ut.emp_fullname}</td>
-                                                <td>{ut.ut_date}</td>
-                                                <td>{formatTime(ut.ut_time)}</td>
-                                                <td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</td>
-                                                <td>{ut.mf_status_name}</td>
-                                                <td>{formatDate(ut.created_date)}</td>
-                                                <td>
+                                                <Table.Td>{ut.ut_no}</Table.Td>
+                                                <Table.Td>{ut.emp_fullname}</Table.Td>
+                                                <Table.Td>{ut.ut_date}</Table.Td>
+                                                <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
+                                                <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
+                                                <Table.Td>{ut.mf_status_name}</Table.Td>
+                                                <Table.Td>{formatDate(ut.created_date)}</Table.Td>
+                                                <Table.Td>
                                                     <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
                                                     <Button onClick={() => handleEditClick(ut.id)} color="yellow" className="ms-3">Edit</Button>
                                                     <Button onClick={() => handleDelete(ut.id)} color="red" className="ms-3">Delete</Button>
-                                                </td>
-                                            </tr>
+                                                </Table.Td>
+                                            </Table.Tr>
                                         );
                                     })
                                 ) : (
@@ -248,23 +256,8 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 )}
                             </tbody>
                             {/* Pagination */}
-
+                                <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm"/>
                         </Table>
-                        <div className="d-flex justify-content-between mt-4">
-                            <Button
-                                disabled={!prev_page_url}
-                                onClick={() => (window.location.href = prev_page_url)}
-                            >
-                                Previous
-                            </Button>
-                            <span>Page {current_page} of {last_page}</span>
-                            <Button
-                                disabled={!next_page_url}
-                                onClick={() => (window.location.href = next_page_url)}
-                            >
-                                Next
-                            </Button>
-                        </div>
                         <Modal opened={opened} onClose={close} title="UT Request Details" centered>
                             {selectedUT && (
                                 <>
@@ -339,6 +332,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 )}
                             </form>
                         </Modal>
+          
                     </Card.Body>
                 </Card>
             </Container>

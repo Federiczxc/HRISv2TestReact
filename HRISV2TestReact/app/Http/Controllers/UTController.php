@@ -101,7 +101,7 @@ class UTController extends Controller
     public function UTApprList()
     {
         $apprvID = Auth::user()->name;
-        $appr_pendings = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->where('ut_status_id', '1')->paginate(10);
+        $appr_pendings = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->where('ut_status_id', '1')->get();
 
         $appr_updated = UTModel::where(function ($query) use ($apprvID) {
             $query->where('first_apprv_name', $apprvID)
@@ -111,7 +111,7 @@ class UTController extends Controller
                 $query->where('ut_status_id', '2')
                     ->orWhere('ut_status_id', '3');
             })
-            ->paginate(10);
+            ->get();
         return Inertia::render('UT_Module/ut_appr_list', [
             'UTPendingList' => $appr_pendings,
             'UTUpdatedList' => $appr_updated,
@@ -121,8 +121,11 @@ class UTController extends Controller
 
     public function updateUTRequest(Request $request, $id)
     {
+        $validated = $request->validate([
+            'ut_status_id' => 'required|in:2,3', // Validate that it is either 2 or 3
+        ]);
         $currentUser = Auth::user()->emp_no;
-        $ut_status_id = $request->input('ut_status_id');
+        $ut_status_id = $validated['ut_status_id'];
         if ($ut_status_id == 2) {
             $statusname = 'Approved';
         } elseif ($ut_status_id == 3) {
@@ -167,6 +170,37 @@ class UTController extends Controller
                 'updated_date' => Carbon::now()
             ]);
         }
+        return redirect()->intended('/UT_Module/ut_appr_list');
+    }
+
+    public function viewUTPendingRequest($id)
+    {
+        $viewUTPendingRequest = UTModel::findorfail($id);
+        /*  dd("puke", $id, $viewUTRequest); */
+        return Inertia::render('UT_Module/ut_appr_list', [
+            'viewUTPendingRequest' => $viewUTPendingRequest,
+        ]);
+    }
+    public function editUTApprRequest(Request $request)
+    {
+        $ut = UTModel::where('ut_no', $request->ut_no)->first();
+        $validated = $request->validate([
+            'ut_status_id' => 'required|in:2,3',
+            'remarks' => 'nullable|string' // Validate that it is either 2 or 3
+        ]);
+        $currentUser = Auth::user()->emp_no;
+        $statusname = $validated['ut_status_id'] == 2 ? 'Approved' : 'Rejected';
+
+        $ut->update([
+            'ut_status_id' => $validated['ut_status_id'],
+            'mf_status_name' => $statusname,
+            'remarks' => $validated['remarks'],
+            'approved_by' => $currentUser,
+            'approved_date' => Carbon::now(),
+            'updated_by' => $currentUser,
+            'updated_date' => Carbon::now(),
+        ]);
+        /* return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut]); */
         return redirect()->intended('/UT_Module/ut_appr_list');
     }
     /* public function updateUTDisplayRequest($id)

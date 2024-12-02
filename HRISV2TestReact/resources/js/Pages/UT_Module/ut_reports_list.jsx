@@ -9,15 +9,7 @@ import { router } from '@inertiajs/react'
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 
-export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRequest }) {
-
-    /* UT Pending List Declaration */
-    /*     const { data: pendingData,
-            current_page: pendingPage,
-            last_page: pendingLastPage,
-            next_page_url: pendingNextPageUrl,
-            prev_page_url: pendingPrevPageUrl } = UTPendingList; */
-
+export default function ut_reports_list({ UTPendingList, UTUpdatedList, viewUTPendingRequest }) {
 
     const [requestData, setRequestData] = useState(UTPendingList);
     const [activePendingPage, setActivePendingPage] = useState(1);
@@ -28,10 +20,6 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
         activePendingPage * itemsPerPendingPage
     );
 
-
-    useEffect(() => {
-        setRequestData(UTPendingList);
-    }, [UTPendingList]);
     const [selectedPendingUT, setSelectedPendingUT] = useState(viewUTPendingRequest);
     const handleViewClick = (utId) => {
         const utData = UTPendingList.find((ut) => ut.id === utId);
@@ -49,17 +37,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
     const [opened2, setOpened2] = useState(false);
     const open2 = () => setOpened2(true);
     const close2 = () => setOpened2(false)
-    /* UT Updated List Declaration */
-    /*  const { data: updatedData,
-         current_page: updatedPage,
-         last_page: updatedLastPage,
-         next_page_url: updatedNextPageUrl,
-         prev_page_url: updatedPrevPageUrl } = UTUpdatedList; */
-    /*     const [requestData2, setRequestData2] = useState(updatedData || []);
-        useEffect(() => {
-            setRequestData2(updatedData);
-        }, [UTUpdatedList]);
-     */
+
     const [activeUpdatedPage, setActiveUpdatedPage] = useState(1);
     const itemsPerUpdatedPage = 5;
     const totalUpdatedPages = Math.ceil(UTUpdatedList.length / itemsPerUpdatedPage);
@@ -73,114 +51,6 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
     const [editMode, setEditMode] = useState({});
 
 
-
-    const handleSaveRow = async (requestID) => {    /* EDIT SAVE */
-        const requestToUpdate = requestData.find((utRequest) => utRequest.id === requestID);
-
-        /*    const statusMapping = {
-               2: "Approved",
-               3: "Rejected",
-           };
-    */
-        if (!requestToUpdate.ut_status_id || requestToUpdate.ut_status_id === '1') {
-            notifications.show({
-                title: 'Error',
-                message: `Please select a valid option before saving`,
-                position: 'top-center',
-                color: 'red',
-                autoClose: 2000,
-            })
-            return;
-        }
-        const updatedFields = {
-            ut_status_id: requestToUpdate.ut_status_id,
-            /* mf_status_name: statusMapping[requestToUpdate.ut_status_id] || "Pending" */
-        };
-        try {
-            await router.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields, {
-                onSuccess: () => {
-                    const updatedPendingList = UTPendingList.filter(
-                        (utRequest) => utRequest.id !== requestID
-                    )
-                    const updatedRequest = { ...requestToUpdate, ...updatedFields };
-                    const updatedUpdatedList = [...UTUpdatedList, updatedRequest];
-                    UTPendingList = updatedPendingList;
-                    UTUpdatedList = updatedUpdatedList;
-                    setEditMode((prev) => ({ ...prev, [requestID]: false }));
-                    notifications.show({
-                        title: 'Success',
-                        message: `UT Request successfully updated`,
-                        position: 'top-center',
-                        color: 'green ',
-                        autoClose: 2000,
-                    })
-                },
-                onError: (error) => {
-                    notifications.show({
-                        title: 'Error',
-                        message: `Unable to make any changes. Please try again: ${error}`,
-                        position: 'top-center',
-                        color: 'red ',
-                        autoClose: 2000,
-                    })
-                }
-            });
-
-
-        } catch (error) {
-            console.error("Error updating details:", error);
-            alert("An error occurred while updating the request.");
-        }
-    };
-
-
-    const handleFieldChange = (requestID, field, value) => {
-        setRequestData((prevData) => {
-            return prevData.map((utRequest) =>
-                utRequest.id === requestID ? { ...utRequest, [field]: value } : utRequest
-            );
-        });
-        console.log(`Updated ${field} to ${value} for request ID ${requestID}`);
-    };
-    function handleEditSubmit(e) {
-        e.preventDefault();
-    
-        if (!selectedPendingUT.ut_status_id) {
-            console.error('UT Status is required.');
-            return;
-        }
-    
-        const updatedFields = {
-            ut_no: selectedPendingUT.ut_no,      
-            ut_status_id: selectedPendingUT.ut_status_id,
-            remarks: selectedPendingUT.remarks,  
-        };
-    
-        router.post('/UT_Module/ut_appr_list/edit', updatedFields, {
-            onSuccess: () => {
-                notifications.show({
-                    title: 'Success',
-                    message: `UT Request successfully updated`,
-                    position: 'top-center',
-                    color: 'green ',
-                    autoClose: 2000,
-                })
-            },
-            onError: (error) => {
-                notifications.show({
-                    title: 'Error',
-                    message: `Unable to make any changes. Please try again: ${error}`,
-                    position: 'top-center',
-                    color: 'red ',
-                    autoClose: 2000,
-                })
-            }
-        });
-    
-        // Close the modal after submission
-        close();
-    }
-    
     /* FORMAAAAAAAAAAAAAAAAAAAAT */
     const formatTime = (time) => {
         const timeParts = time.split(':');
@@ -203,17 +73,6 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
     };
     /* FORMAAAAAAAAAAAAAAAAT */
 
-
-
-
-
-    /* function handleChange(name, value) {
-        setValues((prevValues) => ({
-            ...prevValues,
-            [name]: name === "ut_date" ? new Date(value) : value, // Convert ut_date to Date object
-        }));
-    }
-*/
 
     const openModal = () => modals.openConfirmModal({
         title: 'Please Confirm',
@@ -241,33 +100,6 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
         onCancel: () => console.log('Cancel'),
 
     });
-
-    function handleAction(action) {
-        router.post('ut_appr_list', { action }, {
-            onSuccess: () => {
-                notifications.show({
-                    title: 'Success',
-                    message: `UT Request Batch Update Success`,
-                    position: 'top-center',
-                    color: 'green ',
-                    autoClose: 2000,
-                })
-
-            },
-            onError: () => {
-                notifications.show({
-                    title: 'Success',
-                    message: `Unable to make any changes. Please try again`,
-                    position: 'top-center',
-                    color: 'green ',
-                    autoClose: 2000,
-                })
-
-
-            },
-        });
-
-    };
 
 
     const ref = useRef(null);
@@ -319,62 +151,10 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
                                                             <Table.Td>{ut.ut_date}</Table.Td>
                                                             <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
                                                             <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
-                                                            <Table.Td>
-                                                                {editMode[ut.id] ? (
-                                                                    <Form.Select
-                                                                        value={requestData.find((utRequest) => utRequest.id === ut.id)?.ut_status_id || ''}
-                                                                        onChange={(e) => handleFieldChange(ut.id, 'ut_status_id', e.target.value)}
-                                                                    >
-                                                                        <option value=""> Please select</option>
-                                                                        <option value="2">Approved</option>
-                                                                        <option value="3">Rejected</option>
-                                                                    </Form.Select>
-                                                                ) : (
-                                                                    ut.mf_status_name
-                                                                )}
-                                                            </Table.Td>
+                                                            <Table.Td>ut.mf_status_name</Table.Td>
                                                             <Table.Td>{formatDate(ut.created_date)}</Table.Td>
                                                             <Table.Td>
-                                                                {editMode[ut.id] ?
-                                                                    (
-                                                                        <>
-                                                                            <Button
-                                                                                className="btn btn-success btn-sm" color='green'
-                                                                                onClick={() => handleSaveRow(ut.id)}
-                                                                            >
-                                                                                Save
-                                                                            </Button>
-                                                                            <Button
-                                                                                className="btn btn-secondary btn-sm" color='gray'
-                                                                                onClick={() =>
-                                                                                    setEditMode((prev) => ({
-                                                                                        ...prev,
-                                                                                        [ut.id]: false,
-                                                                                    }))
-                                                                                }
-                                                                                style={{ marginLeft: "10px" }}
-                                                                            >
-                                                                                Cancel
-                                                                            </Button>
-                                                                        </>
-                                                                    ) :
-                                                                    (
-                                                                        <>
-                                                                            <Button
-                                                                                className="btn btn-warning btn-sm" color='yellow'
-                                                                                onClick={() =>
-                                                                                    setEditMode((prev) => ({
-                                                                                        ...prev,
-                                                                                        [ut.id]: true,
-                                                                                    }))
-                                                                                }
-                                                                            >
-                                                                                Edit
-                                                                            </Button>
-                                                                            <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
-                                                                        </>
-                                                                    )
-                                                                }
+                                                                <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
                                                             </Table.Td>
                                                         </Table.Tr>
                                                     );
