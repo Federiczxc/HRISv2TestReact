@@ -11,11 +11,11 @@ const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-light">
       <a className="navbar-brand" href="">
-  
-    {auth.user ? `Welcome, ${auth.user.name}` : null}
-   
-  
-  </a>
+
+        {auth.user ? `Welcome, ${auth.user.name}` : null}
+
+
+      </a>
 
       <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span className="navbar-toggler-icon"></span>
@@ -36,6 +36,10 @@ const Navbar = () => {
             <a className="nav-link" href="/UT_Module/ut_appr_list"> UT Approval</a>
           </li>
 
+          <li className="nav-item active">
+            <a className="nav-link" href="/UT_Module/ut_reports_list"> UT Reports</a>
+          </li>
+
           {/* Logout link */}
           {auth.user ? <li className="nav-item">
             <a
@@ -45,8 +49,8 @@ const Navbar = () => {
             >
               Logout
             </a>
-          </li> : null }
-          
+          </li> : null}
+
 
         </ul>
       </div>

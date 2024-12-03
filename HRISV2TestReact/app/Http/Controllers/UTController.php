@@ -203,16 +203,22 @@ class UTController extends Controller
         /* return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut]); */
         return redirect()->intended('/UT_Module/ut_appr_list');
     }
-    /* public function updateUTDisplayRequest($id)
-    {
 
-        $selectedRequest = UTModel::findorFail($id);
-        return view('/UT_Module/ut_appr_pending', compact('selectedRequest'));
-    }
    
-    public function updatedUTDisplayRequest($id)
+    public function UTReportsList()
     {
-        $selectedUpdatedRequest = UTModel::findorFail($id);
-        return view('/UT_Module/ut_appr_updated', compact('selectedUpdatedRequest'));
-    } */
+        $apprvID = Auth::user()->name;
+
+        $appr_list = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->get();
+        return Inertia::render('UT_Module/ut_reports_list', [
+            'UTReportsList' => $appr_list,
+        ]);
+    } 
+    public function viewUTReportRequest($id)
+    {
+        $viewUTReportRequest = UTModel::findorfail($id);
+        return Inertia::render('UT_Module/ut_reports_list', [
+            'viewUTReportRequest' => $viewUTReportRequest,
+        ]);
+    }
 }

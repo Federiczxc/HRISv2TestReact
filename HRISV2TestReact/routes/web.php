@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UTController;
 use Illuminate\Support\Facades\Auth;
+
 Route::get('/', function () {
     return Auth::check()
         ? redirect('/UT_Module/ut_dashboard') // Redirect to dashboard if authenticated
@@ -32,3 +33,5 @@ Route::post('/UT_Module/ut_appr_list/edit', [UTController::class, 'editUTApprReq
 Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList'])->middleware('auth')->name('apprlist.show');
 Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUTRequest']);
 Route::post('/UT_Module/ut_appr_list', [UTController::class, 'updateAll'])->name('update.all');
+
+Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])->middleware('auth')->name('utreports.show');
