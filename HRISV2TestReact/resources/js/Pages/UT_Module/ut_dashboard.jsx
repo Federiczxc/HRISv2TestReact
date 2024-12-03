@@ -5,9 +5,11 @@ import { notifications } from '@mantine/notifications';
 export default function ut_dashboard({ users, companies, approvers }) {
 
     const { data, current_page, last_page, next_page_url, prev_page_url } = users;
+    console.log(users);
     const [editMode, setEditMode] = useState({});
     const [userData, setUserData] = useState(data);
     const approverOptions = users.data.filter((user) => user.is_approver === 1);
+    console.log("afa", userData);
 
     useEffect(() => {
         setUserData(users.data,);

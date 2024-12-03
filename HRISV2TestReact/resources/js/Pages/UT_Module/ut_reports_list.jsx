@@ -1,33 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
-import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Textarea, Modal, Button, Text, Select, Tabs, Table, Pagination, Input } from '@mantine/core';
-import { DateInput, TimeInput } from '@mantine/dates';
-
-import { IconClock } from '@tabler/icons-react';
+import { Box, Button } from '@mantine/core';
+import dayjs from 'dayjs';
+import { IconClock, IconDownload } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
-
+import { MantineReactTable, useMantineReactTable } from "mantine-react-table";
+import { mkConfig, generateCsv, download } from 'export-to-csv';
 export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) {
-    const [activePage, setActivePage] = useState(1);
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(UTReportsList.length / itemsPerPage);
-    const paginatedPage = UTReportsList.slice(
-        (activePage - 1) * itemsPerPage,
-        activePage * itemsPerPage
-    );
-    console.log(UTReportsList);
-    const [selectedUT, setSelectedUT] = useState(viewUTReportRequest);
-    const handleViewClick = (utId) => {
-        const utData = UTReportsList.find((ut) => ut.id === utId);
-        setSelectedUT(utData);
-        open();
-    }
-    const [opened, setOpened] = useState(false);
-    const open = () => setOpened(true);
-    const close = () => setOpened(false);
-
-
-    /* FORMAAAAAAAAAAAAAAAAAAAAT */
+  
+    const data = UTReportsList
     const formatTime = (time) => {
         const timeParts = time.split(':');
         const hours = parseInt(timeParts[0]);
@@ -37,113 +18,220 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         const period = isPM ? 'PM' : 'AM';
         return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
     };
+    const columns = [
+        {
+            accessorKey: 'ut_no',
+            header: 'Reference No.',
+            grow: false,
+            size: 10,
+        },
+        {
+            accessorKey: 'emp_fullname',
+            header: 'Name',
+            grow: false,
+            size: 10,
+        },
+        {
+            accessorKey: 'mf_status_name',
+            header: 'Status',
+            grow: false,
+            size: 10,
+        },
+        {
+            accessorKey: 'ut_date',
+            header: 'Date',
+            grow: false,
+            size: 10,
+        },
+        {
+            accessorKey: 'ut_time',
+            header: 'Time',
+            Cell: ({ cell }) => {
+                const timeValue = cell.getValue();
+                const formattedTime = formatTime(timeValue.split('.')[0]);
+                return <span>{formattedTime}</span>;
+            },
+            grow: false,
+            size: 3,
+        },
+        {
+            accessorKey: 'ut_reason',
+            header: 'Reason',
+            grow: true,
+            size: 10,
+            Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
+        },
+        
+        {
+            accessorKey: 'created_date',
+            header: 'Date Filed',
+            Cell: ({ cell }) => <span>{dayjs(cell.getValue()).format('YYYY-MM-DD')}</span>,
+
+        },
+        {
+            accessorKey: 'first_apprv_name',
+            header: 'First Approver',
+        },
+        {
+            accessorKey: 'first_apprv_no',
+            header: 'First Approver Emp No',
+        },
+        {
+            accessorKey: 'sec_apprv_name',
+            header: 'Second Approver',
+        },
+        {
+            accessorKey: 'sec_apprv_no',
+            header: 'Second Approver Emp No',
+        },
+        {
+            accessorKey: 'approved_by',
+            header: 'Approved By(Emp No): ',
+        },
+        {
+            accessorKey: 'approved_date',
+            header: 'Approved Date',
+            Cell: ({ cell }) => <span>{dayjs(cell.getValue()).format('YYYY-MM-DD')}</span>,
+       
+
+        },
+        
+    ];
+    const csvConfig = mkConfig({
+        fieldSeparator: ',',
+        decimalSeparaator: '.',
+        useKeysAsHeaders: true,
+        filename: 'UT_Reports_List',
+
+    })
 
 
-    const formatDate = (date) => {
-        if (!date) return ''; // Return an empty string if no date is provided
-        const d = new Date(date);
-        const year = d.getFullYear();
-        const month = (d.getMonth() + 1).toString().padStart(2, '0');
-        const day = d.getDate().toString().padStart(2, '0');
-        return `${year}-${month}-${day}`;
+    const handleExportRows = (rows) => {
+        const rowData = rows.map((row) => {
+            const mappedRow = {};
+            columns.forEach((column) => {
+                let value = row.original[column.accessorKey];
+                if (column.accessorKey === 'ut_time') {
+                    value = formatTime(value.split('.')[0]);
+                } else if (column.accessorKey === 'created_date' || column.accessorKey === 'approved_date') {
+                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
+                }
+                mappedRow[column.header] = value;
+            });
+            return mappedRow;
+        });
+
+        const csv = generateCsv(csvConfig)(rowData);
+        download(csvConfig)(csv);
     };
-    /* FORMAAAAAAAAAAAAAAAAT */
+    const handleExportData = () => {
+        const mappedData = data.map((row) => {
+            const mappedRow = {};
+    
+            columns.forEach((column) => {
+                let value = row[column.accessorKey];
+    
+                if (column.accessorKey === 'ut_time') {
+                } else if (column.accessorKey === 'created_date' || column.accessorKey === 'approved_date') {
+                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
+                }
+    
+                mappedRow[column.header] = value;
+            });
+    
+            return mappedRow;
+        });
+    
+        const csv = generateCsv(csvConfig)(mappedData);
+        download(csvConfig)(csv);
+    };
+    
 
+    const table = useMantineReactTable({
+        columns,
+        data,
+        layoutMode: "grid-no-grow",
+        enableRowSelection: true,
+        enableColumnResizing: true,
+        columnFilterDisplayMode: 'popover',
+        columnResizeMode: 'onEnd', 
+        paginationDisplayMode: 'pages',
+        positionToolbarAlertBanner: 'bottom',
+        initialState: {
+            density: 'xs',
+            columnVisibility: {
+                created_date: false,
+                first_apprv_name: false,
+                sec_apprv_name: false,
+                first_apprv_no: false,
+                sec_apprv_no: false,
+                approved_date: false,
+                'mrt-row-expand': false,
+            }
+        },
+        renderTopToolbarCustomActions: ({ table }) => (
+            <Box
+                sx={{
+               
+                    gap: '16px',
+                    padding: '8px',
+                    flexWrap: 'wrap',
+                }}
+            >
+                <Button
+                    color="lightblue"
+                    //export all data that is currently in the table (ignore pagination, sorting, filtering, etc.)
+                    onClick={handleExportData}
+                    leftIcon={<IconDownload />}
+                    variant="filled"
+                >
+                    Export All Data
+                </Button>
+                <Button
+                    disabled={table.getPrePaginationRowModel().rows.length === 0}
+                    //export all rows, including from the next page, (still respects filtering and sorting)
+                    onClick={() =>
+                        handleExportRows(table.getPrePaginationRowModel().rows)
+                    }
+                    leftIcon={<IconDownload />}
+                    variant="filled"
+                >
+                    Export All Rows
+                </Button>
+                <Button
+                    disabled={table.getRowModel().rows.length === 0}
+                    //export all rows as seen on the screen (respects pagination, sorting, filtering, etc.)
+                    onClick={() => handleExportRows(table.getRowModel().rows)}
+                    leftIcon={<IconDownload />}
+                    variant="filled"
+                >
+                    Export Page Rows
+                </Button>
+                <Button
+                    disabled={
+                        !table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()
+                    }
+                    //only export selected rows
+                    onClick={() => handleExportRows(table.getSelectedRowModel().rows)}
+                    leftIcon={<IconDownload />}
+                    variant="filled"
+                >
+                    Export Selected Rows
+                </Button>
+            </Box>
 
+        ),
+    });
 
-    const ref = useRef(null);
-    const pickerControl = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
-        <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
-    </ActionIcon>);
     return (
         <AppLayout>
-            <Container className="mt-3">
-                <Card className="mt-5">
-                    <Card.Body>
-                        <Card.Title>Undertime Reports List</Card.Title>
-                        <Table striped highlightOnHover>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>UT No</Table.Th>
-                                    <Table.Th>Name</Table.Th>
-                                    <Table.Th>Date</Table.Th>
-                                    <Table.Th>Time</Table.Th>
-                                    <Table.Th>Reason</Table.Th>
-                                    <Table.Th>Status</Table.Th>
-                                    <Table.Th>Date File</Table.Th>
-                                    <Table.Th>Action</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {UTReportsList && UTReportsList.length > 0 ?
-                                    (
-                                        paginatedPage.map((ut) => {
-
-                                            return (
-                                                <Table.Tr key={ut.id}>
-                                                    <Table.Td>{ut.ut_no}</Table.Td>
-                                                    <Table.Td>{ut.emp_fullname}</Table.Td>
-                                                    <Table.Td>{ut.ut_date}</Table.Td>
-                                                    <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
-                                                    <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
-                                                    <Table.Td>{ut.mf_status_name}</Table.Td>
-                                                    <Table.Td>{formatDate(ut.created_date)}</Table.Td>
-                                                    <Table.Td>
-                                                        <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
-                                                    </Table.Td>
-                                                </Table.Tr>
-                                            );
-
-                                        })
-                                    ) : (
-                                        <p1> Empty data</p1>
-                                    )}
-                            </Table.Tbody>
-                            {/* Pagination */}
-                            <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
-                        </Table>
-                        <Modal opened={opened} onClose={close} title="UT Request Details" centered>
-
-                            {selectedUT && (
-                                <>
-                                    <label>Reference No.</label>
-                                    <Input value={selectedUT.ut_no || ''} disabled />
-
-                                    <label>UT Status</label>
-                                    <Input
-                                        disabled value={selectedUT.mf_status_name || ''}
-                                    > </Input>
-
-                                    <label>UT Date Requested</label>
-                                    <DateInput placeholder={selectedUT.ut_date || ''} disabled />
-
-                                    <label>UT Time Requested</label>
-                                    <Input placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
-
-                                    <label>UT Reason</label>
-                                    <Textarea value={selectedUT.ut_reason || ''} disabled />
-
-                                    <label>Date Filed</label>
-                                    <DateInput placeholder={formatDate(selectedUT.created_date) || ''} disabled />
-
-                                    <label>Approved by: </label>
-                                    <Input placeholder={selectedUT.approved_by} disabled />
-
-                                    <label>Approved Date: </label>
-                                    <DateInput placeholder={formatDate(selectedUT.approved_date)} disabled />
-                                    <label>Remarks</label>
-                                    <Textarea value={selectedUT.remarks || ''} disabled />
-                                </>
-                            )}
 
 
-                        </Modal>
+
+            <MantineReactTable table={table} />
 
 
-                    </Card.Body>
 
-                </Card>
-            </Container >
         </AppLayout >
     )
 }
