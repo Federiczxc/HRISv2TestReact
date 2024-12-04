@@ -293,7 +293,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
                                 <Card.Title>Undertime Pending List</Card.Title>
                                 <div>
                                     <Button onClick={() => openModal()} color='green'> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red'> Reject all</Button></div>
+                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button></div>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>

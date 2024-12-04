@@ -7,7 +7,7 @@ import { notifications } from '@mantine/notifications';
 import { MantineReactTable, useMantineReactTable } from "mantine-react-table";
 import { mkConfig, generateCsv, download } from 'export-to-csv';
 export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) {
-  
+
     const data = UTReportsList
     const formatTime = (time) => {
         const timeParts = time.split(':');
@@ -61,7 +61,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
             size: 10,
             Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
         },
-        
+
         {
             accessorKey: 'created_date',
             header: 'Date Filed',
@@ -92,10 +92,10 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
             accessorKey: 'approved_date',
             header: 'Approved Date',
             Cell: ({ cell }) => <span>{dayjs(cell.getValue()).format('YYYY-MM-DD')}</span>,
-       
+
 
         },
-        
+
     ];
     const csvConfig = mkConfig({
         fieldSeparator: ',',
@@ -107,13 +107,20 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
 
 
     const handleExportRows = (rows) => {
+        const visibleColumns = columns.filter(
+            (column) => table.getState().columnVisibility[column.accessorKey] !== false
+        );
+
         const rowData = rows.map((row) => {
             const mappedRow = {};
-            columns.forEach((column) => {
+            visibleColumns.forEach((column) => {
                 let value = row.original[column.accessorKey];
                 if (column.accessorKey === 'ut_time') {
                     value = formatTime(value.split('.')[0]);
-                } else if (column.accessorKey === 'created_date' || column.accessorKey === 'approved_date') {
+                } else if (
+                    column.accessorKey === 'created_date' ||
+                    column.accessorKey === 'approved_date'
+                ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
                 mappedRow[column.header] = value;
@@ -125,20 +132,24 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         download(csvConfig)(csv);
     };
     const handleExportData = () => {
+        const visibleColumns = columns.filter(
+            (column) => table.getState().columnVisibility[column.accessorKey] !== false
+        );
+    
         const mappedData = data.map((row) => {
             const mappedRow = {};
-    
-            columns.forEach((column) => {
+            visibleColumns.forEach((column) => {
                 let value = row[column.accessorKey];
-    
                 if (column.accessorKey === 'ut_time') {
-                } else if (column.accessorKey === 'created_date' || column.accessorKey === 'approved_date') {
+                    value = formatTime(value.split('.')[0]);
+                } else if (
+                    column.accessorKey === 'created_date' ||
+                    column.accessorKey === 'approved_date'
+                ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
-    
                 mappedRow[column.header] = value;
             });
-    
             return mappedRow;
         });
     
@@ -147,14 +158,14 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
     };
     
 
+
     const table = useMantineReactTable({
         columns,
         data,
         layoutMode: "grid-no-grow",
         enableRowSelection: true,
         enableColumnResizing: true,
-        columnFilterDisplayMode: 'popover',
-        columnResizeMode: 'onEnd', 
+        columnResizeMode: 'onEnd',
         paginationDisplayMode: 'pages',
         positionToolbarAlertBanner: 'bottom',
         initialState: {
@@ -172,7 +183,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         renderTopToolbarCustomActions: ({ table }) => (
             <Box
                 sx={{
-               
+
                     gap: '16px',
                     padding: '8px',
                     flexWrap: 'wrap',
@@ -182,7 +193,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                     color="lightblue"
                     //export all data that is currently in the table (ignore pagination, sorting, filtering, etc.)
                     onClick={handleExportData}
-                    leftIcon={<IconDownload />}
+                    leftSection={<IconDownload />}
                     variant="filled"
                 >
                     Export All Data
@@ -193,7 +204,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                     onClick={() =>
                         handleExportRows(table.getPrePaginationRowModel().rows)
                     }
-                    leftIcon={<IconDownload />}
+                    leftSection={<IconDownload />}
                     variant="filled"
                 >
                     Export All Rows
@@ -202,7 +213,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                     disabled={table.getRowModel().rows.length === 0}
                     //export all rows as seen on the screen (respects pagination, sorting, filtering, etc.)
                     onClick={() => handleExportRows(table.getRowModel().rows)}
-                    leftIcon={<IconDownload />}
+                    leftSection={<IconDownload />}
                     variant="filled"
                 >
                     Export Page Rows
@@ -213,7 +224,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                     }
                     //only export selected rows
                     onClick={() => handleExportRows(table.getSelectedRowModel().rows)}
-                    leftIcon={<IconDownload />}
+                    leftSection={<IconDownload />}
                     variant="filled"
                 >
                     Export Selected Rows

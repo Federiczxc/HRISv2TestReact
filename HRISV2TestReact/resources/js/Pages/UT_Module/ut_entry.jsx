@@ -201,7 +201,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                             <Textarea
                                 label="Reason"
                                 name="ut_reason"
-                                placeholder="Autosize with 4 rows max"
+                                placeholder=""
                                 autosize
                                 minRows={2}
                                 maxRows={4}

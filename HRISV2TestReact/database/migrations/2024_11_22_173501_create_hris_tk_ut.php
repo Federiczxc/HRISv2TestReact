@@ -20,8 +20,8 @@ return new class extends Migration
             /* $table->bigInteger('ent_id');  */
             $table->string('emp_fullname'); 
             $table->date('ut_date'); 
-            $table->time('ut_time');
-            $table->text('ut_reason')->nullable(); 
+            $table->time('ut_time', 2);
+            $table->text('ut_reason'); 
             $table->string('first_apprv_no'); 
             $table->string('first_apprv_name'); 
             $table->string('sec_apprv_no')->nullable(); 

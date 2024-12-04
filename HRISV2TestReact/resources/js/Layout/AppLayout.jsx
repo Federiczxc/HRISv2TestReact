@@ -6,6 +6,7 @@ import { ModalsProvider } from '@mantine/modals';
 import '@mantine/notifications/styles.css';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/dropzone/styles.css';
 const AppLayout = ({ children }) => {
     return (
         <div>
