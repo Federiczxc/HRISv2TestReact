@@ -37,3 +37,4 @@ Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])
 
 //OB
 Route::get('/OB_Module/ob_entry/', [OBController::class, 'index'])->middleware('auth');
+Route::post('/OB_Module/ob_entry/', [OBController::class, 'OBEntry']);

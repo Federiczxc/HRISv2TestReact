@@ -138,7 +138,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         open2();
     }
 
-    function handleChange(name, value) {
+    function handleChange(name, value) { //For inputting date
         setValues((prevValues) => ({
             ...prevValues,
             [name]: name === "ut_date" ? new Date(value) : value, // Convert ut_date to Date object
