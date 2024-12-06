@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('hris_tk_ob', function (Blueprint $table) {
             $table->id('ob_id');
-            $table->integer('ob_status_id');
+            $table->unsignedBigInteger('ob_status_id');
             $table->string('ob_no');
-            $table->string('mf_status_name'); 
-            $table->integer('ob_type_id');
-            $table->string('ob_type_name');
+            $table->unsignedBigInteger('ob_type_id');
             $table->bigInteger('emp_no');
             $table->string('destination');
             $table->date('date_from');
@@ -29,14 +27,22 @@ return new class extends Migration
             $table->text('ob_purpose');
             $table->text('ob_attach')->nullable();
             $table->text('appr_remarks')->nullable();
-            $table->string('first_apprv_no');
-            $table->string('sec_apprv_no')->nullable();
-            $table->string('approved_by')->nullable();
+            $table->bigInteger('first_apprv_no');
+            $table->bigInteger('sec_apprv_no')->nullable();
+            $table->bigInteger('approved_by')->nullable();
             $table->dateTime('approved_date')->nullable();
             $table->string('created_by');
             $table->dateTime('created_date')->useCurrent();
             $table->string('updated_by')->nullable();
             $table->dateTime('updated_date')->nullable();
+
+
+            $table->foreign('emp_no')->references('emp_no')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('first_apprv_no')->references('emp_no')->on('users');
+            $table->foreign('sec_apprv_no')->references('emp_no')->on('users');
+
+            $table->foreign('ob_type_id')->references('ob_type_id')->on('hris_mf_ob_type')->onDelete('cascade')->onUpdate(('cascade'));
+            $table->foreign('ob_status_id')->references('mf_status_id')->on('hris_mf_status')->onDelete('cascade')->onUpdate(('cascade'));
         });
     }
 

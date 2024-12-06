@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
 import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Table, Textarea, Modal, Button, Input, Select, Pagination } from '@mantine/core';
+import { ActionIcon, rem, Table, Textarea, Modal, Button, Input, TextInput, Select, Pagination } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock } from '@tabler/icons-react';
 import { Inertia } from '@inertiajs/inertia';
@@ -99,12 +99,29 @@ export default function ut_entry({ UTList, viewUTRequest }) {
             ut_time: values.ut_time,
             ut_reason: selectedUT.ut_reason,
             OnError: (errors) => {
+                notifications.show({
+                    title: 'Error',
+                    message: `Failed to delete the entry: ${errors} `,
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
                 console.error('Submission Error', errors);
             },
-            OnSuccess: () => {
-                console.log('Scucess');
 
-            }
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: 'Edit Success!',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+
+
+            },
+
+            F
         });
         close2();
     }
@@ -219,7 +236,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                         <Table striped>
                             <Table.Thead>
                                 <Table.Tr>
-                                    <Table.Th>Reference No</Table.Th>
+                                    <Table.Th>Reference No.</Table.Th>
                                     <Table.Th>Name</Table.Th>
                                     <Table.Th>Date</Table.Th>
                                     <Table.Th>Time</Table.Th>
@@ -229,7 +246,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                     <Table.Th>Action</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
-                            <tbody>
+                            <Table.Tbody>
                                 {UTList && UTList.length > 0 ? (
                                     paginatedData.map((ut) => {
 
@@ -237,11 +254,11 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                             <Table.Tr key={ut.id}>
 
                                                 <Table.Td>{ut.ut_no}</Table.Td>
-                                                <Table.Td>{ut.emp_fullname}</Table.Td>
+                                                <Table.Td>{ut.user?.name}</Table.Td>
                                                 <Table.Td>{ut.ut_date}</Table.Td>
                                                 <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
                                                 <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
-                                                <Table.Td>{ut.mf_status_name}</Table.Td>
+                                                <Table.Td>{ut.status?.mf_status_name}</Table.Td>
                                                 <Table.Td>{formatDate(ut.created_date)}</Table.Td>
                                                 <Table.Td>
                                                     <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
@@ -254,36 +271,26 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 ) : (
                                     <p1> tite</p1>
                                 )}
-                            </tbody>
+                            </Table.Tbody>
                             {/* Pagination */}
-                                <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm"/>
+                            <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                         </Table>
                         <Modal opened={opened} onClose={close} title="UT Request Details" centered>
                             {selectedUT && (
                                 <>
-                                    <label>Reference No.</label>
-                                    <Input value={selectedUT.ut_no || ''} disabled />
+                                    <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
+                                    <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
 
-                                    <label>UT Status</label>
-                                    <Select placeholder={selectedUT.mf_status_name || ''} disabled />
+                                    <DateInput label="UT Date Requested" placeholder={selectedUT.ut_date || ''} disabled />
 
-                                    <label>UT Date Requested</label>
-                                    <DateInput placeholder={selectedUT.ut_date || ''} disabled />
+                                    <TextInput label="UT Time Requested" placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
+                                    <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
 
-                                    <label>UT Time Requested</label>
-                                    <Input placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
+                                    <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
 
-                                    <label>UT Reason</label>
-                                    <Textarea value={selectedUT.ut_reason || ''} disabled />
+                                    <Input label="Approved by" placeholder={selectedUT.approved_by} disabled />
 
-                                    <label>Date Filed</label>
-                                    <DateInput placeholder={formatDate(selectedUT.created_date) || ''} disabled />
-
-                                    <label>Approved by: </label>
-                                    <Input placeholder={selectedUT.approved_by} disabled />
-
-                                    <label>Approved Date: </label>
-                                    <DateInput placeholder={formatDate(selectedUT.approved_date)} disabled />
+                                    <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
                                 </>
                             )}
                         </Modal>
@@ -293,14 +300,12 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
                                 {selectedUT && (
                                     <>
-                                        <label>Reference No.</label>
-                                        <Input value={selectedUT.ut_no || ''} disabled />
+                                        <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
 
-                                        <label>UT Status</label>
-                                        <Select placeholder={selectedUT.mf_status_name || ''} disabled />
+                                        <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
 
-                                        <label>UT Date Requested</label>
                                         <DateInput
+                                            label="Date"
                                             name="ut_date"
                                             value={values.ut_date}
                                             placeholder={selectedUT.ut_date || ''}
@@ -314,8 +319,6 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                             }}
                                         />
 
-                                        <label>UT Time Requested</label>
-
                                         <TimeInput
                                             label="Time"
                                             name="ut_time"
@@ -325,14 +328,13 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                             onChange={(event) => handleChange(event.target.name, event.target.value)}
                                             style={{ width: 125 }}
                                         />
-                                        <label>UT Reason</label>
-                                        <Textarea value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
+                                        <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
                                         <Button type="submit" className="mt-3" color="teal">Submit</Button>
                                     </>
                                 )}
                             </form>
                         </Modal>
-          
+
                     </Card.Body>
                 </Card>
             </Container>

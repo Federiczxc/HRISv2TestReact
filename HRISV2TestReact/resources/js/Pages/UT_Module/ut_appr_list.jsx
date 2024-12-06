@@ -97,7 +97,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
             /* mf_status_name: statusMapping[requestToUpdate.ut_status_id] || "Pending" */
         };
         try {
-            await router.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields, {
+            router.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields, {
                 onSuccess: () => {
                     const updatedPendingList = UTPendingList.filter(
                         (utRequest) => utRequest.id !== requestID
@@ -315,7 +315,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
                                                     return (
                                                         <Table.Tr key={ut.id}>
                                                             <Table.Td>{ut.ut_no}</Table.Td>
-                                                            <Table.Td>{ut.emp_fullname}</Table.Td>
+                                                            <Table.Td>{ut.user?.name}</Table.Td>
                                                             <Table.Td>{ut.ut_date}</Table.Td>
                                                             <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
                                                             <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
@@ -327,10 +327,10 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
                                                                     >
                                                                         <option value=""> Please select</option>
                                                                         <option value="2">Approved</option>
-                                                                        <option value="3">Rejected</option>
+                                                                        <option value="3">Disapproved</option>
                                                                     </Form.Select>
                                                                 ) : (
-                                                                    ut.mf_status_name
+                                                                    ut.status?.mf_status_name
                                                                 )}
                                                             </Table.Td>
                                                             <Table.Td>{formatDate(ut.created_date)}</Table.Td>
@@ -478,11 +478,11 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
                                                 return (
                                                     <Table.Tr key={ut2.id}>
                                                         <Table.Td>{ut2.ut_no}</Table.Td>
-                                                        <Table.Td>{ut2.emp_fullname}</Table.Td>
+                                                        <Table.Td>{ut2.user?.name}</Table.Td>
                                                         <Table.Td>{ut2.ut_date}</Table.Td>
                                                         <Table.Td>{formatTime(ut2.ut_time)}</Table.Td>
                                                         <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut2.ut_reason}</Table.Td>
-                                                        <Table.Td>{ut2.mf_status_name}</Table.Td>
+                                                        <Table.Td>{ut2.status?.mf_status_name}</Table.Td>
                                                         <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut2.remarks}</Table.Td>
                                                         <Table.Td>{formatDate(ut2.created_date)}</Table.Td>
                                                         <Table.Td>
@@ -507,7 +507,7 @@ export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRe
 
                                             <label>UT Status</label>
                                             <Input
-                                                disabled value={selectedPendingUT.mf_status_name || ''}
+                                                disabled value={selectedPendingUT.status?.mf_status_name || ''}
                                             > </Input>
 
                                             <label>UT Date Requested</label>

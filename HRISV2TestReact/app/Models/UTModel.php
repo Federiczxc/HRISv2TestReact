@@ -40,8 +40,13 @@ class UTModel extends Model
         'created_date',
         'updated_date'
     ];
-    public function empNO()
+    public function user()
     {
-    return $this->belongsTo(User::class, 'emp_no', 'emp_no');
+        return $this->belongsTo(User::class, 'emp_no', 'emp_no');
+    }
+    
+    public function status()
+    {
+        return $this->belongsTo(MFStatusModel::class, 'ut_status_id', 'mf_status_id');
     }
 }

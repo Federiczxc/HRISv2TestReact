@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('name');
            /*  $table->string('email')->nullable(); */
             $table->string('company')->nullable();
-            $table->string('first_apprv_no')->nullable(); 
+            $table->bigInteger('first_apprv_no')->nullable(); 
             $table->string('first_apprv_name')->nullable(); 
-            $table->string('sec_apprv2_no')->nullable(); 
+            $table->bigInteger('sec_apprv2_no')->nullable(); 
             $table->string('sec_apprv2_name')->nullable(); 
             $table->string('password');
             $table->boolean('is_approver')->default(false);

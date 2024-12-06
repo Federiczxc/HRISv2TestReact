@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
+import dayjs from 'dayjs';
+
 import { useForm, router } from '@inertiajs/react'
 import { Container, Card, Form } from 'react-bootstrap';
 import { ActionIcon, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Input, Select, Pagination, TextInput, SimpleGrid } from '@mantine/core';
@@ -7,8 +9,11 @@ import { DateInput, DatePickerInput, TimeInput } from '@mantine/dates';
 import { IconClock, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Dropzone } from '@mantine/dropzone';
-export default function ob_entry({ OBList }) {
-    console.log(OBList);
+
+export default function ob_entry({ OBList, viewOBRequest }) {
+    const data = OBList
+    console.log("data", data);
+    console.log(OBList.user);
     const [values, setValues] = useState({
         destination: '',
         date_from: '',
@@ -18,9 +23,19 @@ export default function ob_entry({ OBList }) {
         person_to_meet: '',
         ob_purpose: '',
         ob_attach: '',
+        ob_days: '',
     });
+    const [activePage, setActivePage] = useState(1);
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(OBList.length / itemsPerPage);
+    const paginatedData = OBList.slice(
+        (activePage - 1) * itemsPerPage,
+        activePage * itemsPerPage
+    );
+
+    const [selectedOB, setSelectedOB] = useState(viewOBRequest);
     const handleFileChange = (acceptedFiles) => {
-       
+
         if (acceptedFiles.length > 0) {
             setValues((prevValues) => ({
                 ...prevValues,
@@ -60,10 +75,21 @@ export default function ob_entry({ OBList }) {
         })
     }
     function handleChange(name, value) { //For inputting date
-        setValues((prevValues) => ({
-            ...prevValues,
-            [name]: value, // Convert ut_date to Date object
-        }));
+        setValues((prevValues) => {
+            const updatedValues = {
+
+                ...prevValues,
+                [name]: value, // Convert ut_date to Date object
+            };
+            if (updatedValues.date_from && updatedValues.date_to) {
+                const dateFrom = dayjs(updatedValues.date_from);
+                const dateTo = dayjs(updatedValues.date_to);
+                const days_count = dateTo.diff(dateFrom, 'day');
+                updatedValues.ob_days = Math.max(days_count, 0);
+            }
+            return updatedValues;
+
+        });
     }
     const preview = values.ob_attach && values.ob_attach instanceof File ? (
         <Image
@@ -81,6 +107,20 @@ export default function ob_entry({ OBList }) {
     const pickerControl2 = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref2.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
         <IconCalendar style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
     </ActionIcon>);
+
+    function handleEditSubmit(e) {
+        e.preventDefault();
+        router.post('/OB_Module/ob_entry/edit', {
+            destination: selectedOB.destination,
+            date_from: values.date_from,
+            date_to: values.date_to,
+            time_from: values.time_from,
+            time_to: values.time_to,
+            person_to_meet: selectedOB.person_to_meet,
+            ob_purpose: selectedOB.ob_purpose,
+            ob_days: values.ob_days
+        })
+    }
     const formatTime = (time) => {
         const timeParts = time.split(':');
         const hours = parseInt(timeParts[0]);
@@ -99,6 +139,25 @@ export default function ob_entry({ OBList }) {
         const day = d.getDate().toString().padStart(2, '0');
         return `${year}-${month}-${day}`;
     };
+
+    const handleViewClick = (obId) => {
+        const obData = OBList.find((ob) => ob.ob_id === obId);
+        setSelectedOB(obData);
+        open();
+    }
+
+    const handleEditClick = (obId) => {
+        const obData = OBList.find((ob) => ob.ob_id === obId);
+        setSelectedOB(obData);
+        open2();
+    }
+
+    const [opened, setOpened] = useState(false);
+    const open = () => setOpened(true);
+    const close = () => setOpened(false);
+    const [editOpened, setEditOpened] = useState(false);
+    const open2 = () => setEditOpened(true);
+    const close2 = () => setEditOpened(false);
     return (
         <AppLayout>
             <Container className="mt-3">
@@ -134,7 +193,7 @@ export default function ob_entry({ OBList }) {
                                                     placeholder="Pick date"
                                                     rightSection={<IconCalendar />}
                                                     style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_from", value.toISOString().split("T")[0])}
+                                                    onChange={(value) => handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))}
                                                 />
                                                 <DateInput
                                                     name="date_to"
@@ -143,9 +202,17 @@ export default function ob_entry({ OBList }) {
                                                     placeholder="Pick date"
                                                     rightSection={<IconCalendar />}
                                                     style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_to", value.toISOString().split("T")[0])}
+                                                    onChange={(value) => handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))}
+                                                />
+                                                <TextInput
+                                                    label="OB Days"
+                                                    name="ob_days"
+                                                    value={values.ob_days}
+                                                    disabled
+                                                    style={{ width: 100 }}
                                                 />
                                             </Box>
+
                                             <Box style={{ display: "flex", gap: "1rem" }}>
                                                 <TimeInput
                                                     label="Time From"
@@ -163,6 +230,7 @@ export default function ob_entry({ OBList }) {
                                                     rightSection={pickerControl2}
                                                     style={{ width: 175 }}
                                                     onChange={(event) => handleChange(event.target.name, event.target.value)} />
+
                                             </Box>
                                             <TextInput
                                                 label="Person to Meet"
@@ -180,6 +248,7 @@ export default function ob_entry({ OBList }) {
                                                 maxRows={4}
                                                 style={{ width: 500 }}
                                                 onChange={(event) => handleChange(event.target.name, event.target.value)} />
+
                                         </Box>
 
 
@@ -220,7 +289,7 @@ export default function ob_entry({ OBList }) {
                                                 </Group>
                                             </Dropzone>
 
-                                                {preview}
+                                            {preview}
 
                                         </Box>
 
@@ -241,8 +310,8 @@ export default function ob_entry({ OBList }) {
                                         <Table.Tr>
                                             <Table.Th> Reference No.</Table.Th>
                                             <Table.Th> Name</Table.Th>
-                                            <Table.Th> Date</Table.Th>
-                                            <Table.Th> Time</Table.Th>
+                                            <Table.Th> Date Range</Table.Th>
+                                            <Table.Th> Time Range</Table.Th>
                                             <Table.Th> Destination</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
                                             <Table.Th> Status</Table.Th>
@@ -251,18 +320,109 @@ export default function ob_entry({ OBList }) {
                                         </Table.Tr>
                                     </Table.Thead>
                                     <Table.Tbody>
-                                        <Table.Tr>
-                                            <Table.Td> 11111</Table.Td>
-                                            <Table.Td> Fed</Table.Td>
-                                            <Table.Td> 11-21-24 11-23-24</Table.Td>
-                                            <Table.Td> 7:30AM 11:50PM</Table.Td>
-                                            <Table.Td> QC</Table.Td>
-                                            <Table.Td> atdog</Table.Td>
-                                            <Table.Td> Pending</Table.Td>
-                                            <Table.Td> 11-20-24</Table.Td>
-                                        </Table.Tr>
+                                        {OBList && OBList.length > 0 ? (
+                                            paginatedData.map((ob) => {
+                                                return (
+                                                    <Table.Tr key={ob.ob_id}>
+                                                        <Table.Td> {ob.ob_no}</Table.Td>
+                                                        <Table.Td> {ob.user?.name}</Table.Td>
+                                                        <Table.Td> {ob.date_from} {ob.date_to}</Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_from)} {formatTime(ob.time_to)}</Table.Td>
+                                                        <Table.Td> {ob.destination}</Table.Td>
+                                                        <Table.Td> {ob.ob_purpose}</Table.Td>
+                                                        <Table.Td> {ob.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td> {formatDate(ob.created_date)}</Table.Td>
+                                                        <Table.Td>   <Button onClick={() => handleViewClick(ob.ob_id)} className="btn btn-primary btn-sm">View</Button>
+                                                            <Button onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-3">Edit</Button>
+                                                            <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-3">Delete</Button></Table.Td>
+                                                    </Table.Tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <p1> Tite </p1>
+                                        )}
+
                                     </Table.Tbody>
+                                    <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                                 </Table>
+                                <Modal opened={opened} onClose={close2} title="OB Request Details" centered>
+                                    {selectedOB && (
+                                        <>
+                                            <TextInput label="Reference No." value={selectedOB.ob_no || ''} disabled />
+                                            <Select label="OB Status" placeholder={selectedOB.status?.mf_status_name || ''} disabled />
+                                            <DateInput label="OB Date From" placeholder={selectedOB.date_from || ''} disabled />
+                                            <DateInput label="OB Date To" placeholder={selectedOB.date_to || ''} disabled />
+                                            <TextInput label="OB Time From." value={selectedOB.time_from || ''} disabled />
+                                            <TextInput label="OB Time To" value={selectedOB.time_to || ''} disabled />
+                                            <TextInput label="Destination" value={selectedOB.destination || ''} disabled />
+                                            <TextInput label="Person To Meet" value={selectedOB.person_to_meet || ''} disabled />
+                                            <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} disabled />
+                                            <DateInput label="Date Filed" placeholder={formatDate(selectedOB.created_date) || ''} disabled />
+                                            <TextInput label="Approved by" placeholder={selectedOB.approved_by || ''} disabled />
+                                            <TextInput label="Approved Date" placeholder={selectedOB.approved_by || ''} disabled />
+
+
+                                        </>
+                                    )}
+                                </Modal>
+                                <Modal opened={editOpened} onClose={close2} title="Edit Request Details" centered>
+                                    <form onSubmit={handleEditSubmit}>
+
+                                        {selectedOB && (
+                                            <>
+                                                <TextInput label="Reference No." value={selectedOB.ob_no || ''} disabled />
+                                                <Select label="OB Status" placeholder={selectedOB.status?.mf_status_name || ''} disabled />
+                                                <DateInput
+                                                    name="date_from"
+                                                    value={values.date_from ? new Date(values.date_from) : null}
+                                                    label="Date from"
+                                                    placeholder={selectedOB.date_from || ''}
+                                                    rightSection={<IconCalendar />}
+                                                    style={{ width: 175 }}
+                                                    onChange={(value) => handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))}
+                                                />
+                                                <DateInput
+                                                    name="date_to"
+                                                    value={values.date_to ? new Date(values.date_to) : null}
+                                                    label="Date to"
+                                                    placeholder={selectedOB.date_to || ''}
+                                                    rightSection={<IconCalendar />}
+                                                    style={{ width: 175 }}
+                                                    onChange={(value) => handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))}
+                                                />
+                                                <TextInput
+                                                    label="OB Days"
+                                                    name="ob_days"
+                                                    value={values.ob_days}
+                                                    disabled
+                                                    style={{ width: 100 }}
+                                                />
+                                                <TimeInput
+                                                    label="Time From"
+                                                    name="time_from"
+                                                    value={values.time_from}
+                                                    ref={ref}
+                                                    rightSection={pickerControl}
+                                                    style={{ width: 175 }}
+                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
+
+                                                <TimeInput label="Time To"
+                                                    name="time_to"
+                                                    value={values.time_to}
+                                                    ref={ref2}
+                                                    rightSection={pickerControl2}
+                                                    style={{ width: 175 }}
+                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                                <TextInput name="destination" label="Destination" value={selectedOB.destination || ''} onChange={(e) => setSelectedOB({ ...selectedOB, destination: e.target.value })} />
+                                                <TextInput label="Person To Meet" value={selectedOB.person_to_meet || ''} onChange={(e) => setSelectedOB({ ...selectedOB, person_to_meet: e.target.value })} />
+                                                <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} onChange={(e) => setSelectedOB({ ...selectedOB, ob_purpose: e.target.value })} />
+                                                <Button type="submit" className="mt-3" color="teal">Submit</Button>
+
+                                            </>
+                                        )}
+                                    </form>
+
+                                </Modal>
                             </Card.Body>
                         </Tabs.Panel>
 

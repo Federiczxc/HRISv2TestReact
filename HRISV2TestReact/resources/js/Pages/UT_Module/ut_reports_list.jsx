@@ -26,13 +26,13 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
             size: 10,
         },
         {
-            accessorKey: 'emp_fullname',
+            accessorKey: 'user.name',
             header: 'Name',
             grow: false,
             size: 10,
         },
         {
-            accessorKey: 'mf_status_name',
+            accessorKey: 'status.mf_status_name',
             header: 'Status',
             grow: false,
             size: 10,
@@ -110,12 +110,19 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
         );
-
+    
         const rowData = rows.map((row) => {
             const mappedRow = {};
+    
             visibleColumns.forEach((column) => {
                 let value = row.original[column.accessorKey];
-                if (column.accessorKey === 'ut_time') {
+    
+                // Handle nested fields like user.name and status.mf_status_name
+                if (column.accessorKey === 'user.name') {
+                    value = row.original.user?.name; // Access the user name
+                } else if (column.accessorKey === 'status.mf_status_name') {
+                    value = row.original.status?.mf_status_name; // Access the status name
+                } else if (column.accessorKey === 'ut_time') {
                     value = formatTime(value.split('.')[0]);
                 } else if (
                     column.accessorKey === 'created_date' ||
@@ -123,14 +130,17 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                 ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
+    
                 mappedRow[column.header] = value;
             });
+    
             return mappedRow;
         });
-
+    
         const csv = generateCsv(csvConfig)(rowData);
         download(csvConfig)(csv);
     };
+    
     const handleExportData = () => {
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
@@ -138,9 +148,15 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
     
         const mappedData = data.map((row) => {
             const mappedRow = {};
+    
             visibleColumns.forEach((column) => {
                 let value = row[column.accessorKey];
-                if (column.accessorKey === 'ut_time') {
+    
+                if (column.accessorKey === 'user.name') {
+                    value = row.user?.name; 
+                } else if (column.accessorKey === 'status.mf_status_name') {
+                    value = row.status?.mf_status_name; 
+                } else if (column.accessorKey === 'ut_time') {
                     value = formatTime(value.split('.')[0]);
                 } else if (
                     column.accessorKey === 'created_date' ||
@@ -148,8 +164,10 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                 ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
+    
                 mappedRow[column.header] = value;
             });
+    
             return mappedRow;
         });
     

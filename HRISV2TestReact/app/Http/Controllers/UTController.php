@@ -16,8 +16,8 @@ class UTController extends Controller
 {
     public function index()
     {
-        $currentUser = Auth::user()->name;
-        $utList = UTModel::where('emp_fullname', $currentUser)->get();
+        $currentUser = Auth::user()->emp_no;
+        $utList = UTModel::with(['user', 'status'])->where('emp_no', $currentUser)->get();
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList
         ]);
@@ -39,20 +39,16 @@ class UTController extends Controller
         $ut_entry = UTModel::create([
             'emp_no' => $user->emp_no,
             'ut_no' => $newUtNo,
-            'emp_fullname' => $user->name,
             'ut_date' => $request->ut_date,
             'ut_time' => $request->ut_time,
             'ut_reason' => $request->ut_reason,
             'first_apprv_no' => $user->first_apprv_no,
-            'first_apprv_name' => $user->first_apprv_name,
             'sec_apprv_no' => $user->sec_apprv2_no,
-            'sec_apprv_name' => $user->sec_apprv2_name,
             'created_date' => Carbon::now(),
             'updated_date' => Carbon::now(),
             'created_by' => $user->id,
             'updated_by' => $user->id,
             'ut_status_id' => 1,
-            'mf_status_name' => 'Pending',
 
         ]);
         return redirect('/UT_Module/ut_entry')->with('success', 'dz');
@@ -100,12 +96,18 @@ class UTController extends Controller
     /* APPROVERS */
     public function UTApprList()
     {
-        $apprvID = Auth::user()->name;
-        $appr_pendings = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->where('ut_status_id', '1')->get();
-
-        $appr_updated = UTModel::where(function ($query) use ($apprvID) {
-            $query->where('first_apprv_name', $apprvID)
-                ->orWhere('sec_apprv_name', $apprvID);
+        $apprvID = Auth::user()->emp_no;
+        $appr_pendings = UTModel::with(['user', 'status'])->where(function ($query) use ($apprvID) {
+            $query->where('first_apprv_no', $apprvID)
+                ->orWhere('sec_apprv_no', $apprvID);
+        })
+            ->where(function ($query) {
+                $query->where('ut_status_id', '1');
+            })
+            ->get();
+        $appr_updated = UTModel::with(['user', 'status'])->where(function ($query) use ($apprvID) {
+            $query->where('first_apprv_no', $apprvID)
+                ->orWhere('sec_apprv_no', $apprvID);
         })
             ->where(function ($query) {
                 $query->where('ut_status_id', '2')
@@ -126,17 +128,12 @@ class UTController extends Controller
         ]);
         $currentUser = Auth::user()->emp_no;
         $ut_status_id = $validated['ut_status_id'];
-        if ($ut_status_id == 2) {
-            $statusname = 'Approved';
-        } elseif ($ut_status_id == 3) {
-            $statusname = 'Rejected';
-        }
+
 
         $remarks = $request->input('remarks');
         $selectedUT = UTModel::findOrFail($id);
         $selectedUT->update([
             'ut_status_id' => $ut_status_id,
-            'mf_status_name' => $statusname,
             'remarks' => $remarks,
             'approved_by' => $currentUser,
             'approved_date' => Carbon::now(),
@@ -144,6 +141,8 @@ class UTController extends Controller
             'updated_date' => Carbon::now(),
 
         ]);
+        $selectedUT->refresh();
+        return redirect()->intended('/UT_Module/ut_appr_list');
     }
 
     public function updateAll(Request $request)
@@ -154,7 +153,6 @@ class UTController extends Controller
         if ($action === 'approve') {
             UTModel::where('ut_status_id', '1')->update([
                 'ut_status_id' => '2',
-                'mf_status_name' => 'Approved',
                 'approved_by' => $currentUser,
                 'approved_date' => Carbon::now(),
                 'updated_by' => $currentUser,
@@ -163,7 +161,6 @@ class UTController extends Controller
         } elseif ($action === 'rejected') {
             UTModel::where('ut_status_id', '1')->update([
                 'ut_status_id' => '3',
-                'mf_status_name' => 'Rejected',
                 'approved_by' => $currentUser,
                 'approved_date' => Carbon::now(),
                 'updated_by' => $currentUser,
@@ -193,7 +190,6 @@ class UTController extends Controller
 
         $ut->update([
             'ut_status_id' => $validated['ut_status_id'],
-            'mf_status_name' => $statusname,
             'remarks' => $validated['remarks'],
             'approved_by' => $currentUser,
             'approved_date' => Carbon::now(),
@@ -204,16 +200,16 @@ class UTController extends Controller
         return redirect()->intended('/UT_Module/ut_appr_list');
     }
 
-   
+
     public function UTReportsList()
     {
-        $apprvID = Auth::user()->name;
+        $apprvID = Auth::user()->emp_no;
 
-        $appr_list = UTModel::where('first_apprv_name', $apprvID)->orWhere('sec_apprv_name', $apprvID)->get();
+        $appr_list = UTModel::with(['user', 'status'])->where('first_apprv_no', $apprvID)->orWhere('sec_apprv_no', $apprvID)->get();
         return Inertia::render('UT_Module/ut_reports_list', [
             'UTReportsList' => $appr_list,
         ]);
-    } 
+    }
     public function viewUTReportRequest($id)
     {
         $viewUTReportRequest = UTModel::findorfail($id);
