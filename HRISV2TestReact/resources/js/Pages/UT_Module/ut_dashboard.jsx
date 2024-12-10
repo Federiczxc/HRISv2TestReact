@@ -2,6 +2,7 @@ import AppLayout from "@/Layout/AppLayout";
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Table, Form } from 'react-bootstrap';
 import { notifications } from '@mantine/notifications';
+import { Box } from "@mantine/core";
 export default function ut_dashboard({ users, companies, approvers }) {
 
     const { data, current_page, last_page, next_page_url, prev_page_url } = users;
@@ -289,7 +290,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                             </tbody>
                         </Table>
                         {/* Pagination */}
-                        <div className="d-flex justify-content-between mt-4">
+                        <Box className="d-flex justify-content-between mt-4">
                             <Button
                                 disabled={!prev_page_url}
                                 onClick={() => (window.location.href = prev_page_url)}
@@ -303,7 +304,7 @@ export default function ut_dashboard({ users, companies, approvers }) {
                             >
                                 Next
                             </Button>
-                        </div>
+                        </Box>
                     </Card.Body>
                 </Card>
             </Container>

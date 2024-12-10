@@ -4,16 +4,13 @@ import dayjs from 'dayjs';
 
 import { useForm, router } from '@inertiajs/react'
 import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Input, Select, Pagination, TextInput, SimpleGrid } from '@mantine/core';
+import { ActionIcon, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Input, Select, Pagination, TextInput, SimpleGrid, FileInput } from '@mantine/core';
 import { DateInput, DatePickerInput, TimeInput } from '@mantine/dates';
 import { IconClock, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Dropzone } from '@mantine/dropzone';
 
 export default function ob_entry({ OBList, viewOBRequest }) {
-    const data = OBList
-    console.log("data", data);
-    console.log(OBList.user);
     const [values, setValues] = useState({
         destination: '',
         date_from: '',
@@ -91,6 +88,35 @@ export default function ob_entry({ OBList, viewOBRequest }) {
 
         });
     }
+
+    function handleDelete(obId) {
+        console.log("del", obId);
+        router.delete(`/OB_Module/ob_entry/${obId}`, {
+            onError: (errors) => {
+                notifications.show({
+                    title: 'Error',
+                    message: 'Failed to delete the entry.',
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+                console.error('Error:', errors);
+            },
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: 'Delete Successful.',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+
+
+            },
+        }
+
+        )
+    }
     const preview = values.ob_attach && values.ob_attach instanceof File ? (
         <Image
             key={values.ob_attach.name}
@@ -110,7 +136,9 @@ export default function ob_entry({ OBList, viewOBRequest }) {
 
     function handleEditSubmit(e) {
         e.preventDefault();
-        router.post('/OB_Module/ob_entry/edit', {
+
+        const updatedFields = {
+            ob_no: selectedOB.ob_no,
             destination: selectedOB.destination,
             date_from: values.date_from,
             date_to: values.date_to,
@@ -118,8 +146,32 @@ export default function ob_entry({ OBList, viewOBRequest }) {
             time_to: values.time_to,
             person_to_meet: selectedOB.person_to_meet,
             ob_purpose: selectedOB.ob_purpose,
-            ob_days: values.ob_days
-        })
+            ob_days: values.ob_days,
+            ob_attach: selectedOB.ob_attach,
+        }
+        router.post('/OB_Module/ob_entry/edit', updatedFields, {
+            onError: (errors) => {
+                console.error('Submission Errors:', errors);
+                notifications.show({
+                    title: 'Error',
+                    message: 'Failed to edit your request. Please try again.',
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+            },
+            onSuccess: () => {
+                console.log('Form edited successfully');
+                notifications.show({
+                    title: 'Success',
+                    message: 'Edit Successful.',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                })
+            }
+        });
+        close2();
     }
     const formatTime = (time) => {
         const timeParts = time.split(':');
@@ -278,14 +330,14 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                         />
                                                     </Dropzone.Idle>
 
-                                                    <div>
+                                                    <Box>
                                                         <Text size="xl" inline>
                                                             Drag image or document here
                                                         </Text>
                                                         <Text size="sm" c="dimmed" inline mt={7}>
                                                             Each file should not exceed 5mb. Image will be previewed.
                                                         </Text>
-                                                    </div>
+                                                    </Box>
                                                 </Group>
                                             </Dropzone>
 
@@ -313,6 +365,7 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                             <Table.Th> Date Range</Table.Th>
                                             <Table.Th> Time Range</Table.Th>
                                             <Table.Th> Destination</Table.Th>
+                                            <Table.Th> To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Date File</Table.Th>
@@ -326,9 +379,11 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                     <Table.Tr key={ob.ob_id}>
                                                         <Table.Td> {ob.ob_no}</Table.Td>
                                                         <Table.Td> {ob.user?.name}</Table.Td>
-                                                        <Table.Td> {ob.date_from} {ob.date_to}</Table.Td>
-                                                        <Table.Td> {formatTime(ob.time_from)} {formatTime(ob.time_to)}</Table.Td>
+                                                        <Table.Td> {ob.date_from} to {ob.date_to}</Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_from)} & {formatTime(ob.time_to)}</Table.Td>
                                                         <Table.Td> {ob.destination}</Table.Td>
+                                                        <Table.Td> {ob.person_to_meet}</Table.Td>
+
                                                         <Table.Td> {ob.ob_purpose}</Table.Td>
                                                         <Table.Td> {ob.status?.mf_status_name}</Table.Td>
                                                         <Table.Td> {formatDate(ob.created_date)}</Table.Td>
@@ -345,84 +400,168 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                     </Table.Tbody>
                                     <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                                 </Table>
-                                <Modal opened={opened} onClose={close2} title="OB Request Details" centered>
+                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details" centered>
                                     {selectedOB && (
                                         <>
-                                            <TextInput label="Reference No." value={selectedOB.ob_no || ''} disabled />
-                                            <Select label="OB Status" placeholder={selectedOB.status?.mf_status_name || ''} disabled />
-                                            <DateInput label="OB Date From" placeholder={selectedOB.date_from || ''} disabled />
-                                            <DateInput label="OB Date To" placeholder={selectedOB.date_to || ''} disabled />
-                                            <TextInput label="OB Time From." value={selectedOB.time_from || ''} disabled />
-                                            <TextInput label="OB Time To" value={selectedOB.time_to || ''} disabled />
-                                            <TextInput label="Destination" value={selectedOB.destination || ''} disabled />
-                                            <TextInput label="Person To Meet" value={selectedOB.person_to_meet || ''} disabled />
+                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                <TextInput label="Reference No." value={selectedOB.ob_no || ''} disabled />
+                                                <Select label="OB Status" placeholder={selectedOB.status?.mf_status_name || ''} disabled />
+                                            </Box>
+
+                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                <DateInput label="OB Date From" placeholder={selectedOB.date_from || ''} disabled />
+                                                <DateInput label="OB Date To" placeholder={selectedOB.date_to || ''} disabled />
+                                                <TextInput
+                                                    label="OB Days"
+                                                    name="ob_days"
+                                                    value={selectedOB.ob_days}
+                                                    placeholder={selectedOB.ob_days}
+                                                    disabled
+                                                    style={{ width: 100 }}
+                                                />
+                                            </Box>
+
+                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                <TextInput label="OB Time From" value={formatTime(selectedOB.time_from) || ''} disabled />
+                                                <TextInput label="OB Time To" value={formatTime(selectedOB.time_to) || ''} disabled />
+                                            </Box>
+
+                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                <TextInput label="Destination" value={selectedOB.destination || ''} disabled />
+                                                <TextInput label="Person To Meet" value={selectedOB.person_to_meet || ''} disabled />
+                                            </Box>
+
                                             <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} disabled />
                                             <DateInput label="Date Filed" placeholder={formatDate(selectedOB.created_date) || ''} disabled />
-                                            <TextInput label="Approved by" placeholder={selectedOB.approved_by || ''} disabled />
-                                            <TextInput label="Approved Date" placeholder={selectedOB.approved_by || ''} disabled />
 
+                                            <Box style={{ display: 'flex', gap: '1rem'}}>
+                                                <TextInput label="Approved by" placeholder={selectedOB.approved_by || ''} disabled />
+                                                <TextInput label="Approved Date" placeholder={selectedOB.approved_by || ''} disabled />
+                                            </Box>
 
                                         </>
                                     )}
                                 </Modal>
-                                <Modal opened={editOpened} onClose={close2} title="Edit Request Details" centered>
+                                <Modal size="xl" opened={editOpened} onClose={close2} title="Edit Request Details" centered>
                                     <form onSubmit={handleEditSubmit}>
-
                                         {selectedOB && (
                                             <>
-                                                <TextInput label="Reference No." value={selectedOB.ob_no || ''} disabled />
-                                                <Select label="OB Status" placeholder={selectedOB.status?.mf_status_name || ''} disabled />
-                                                <DateInput
-                                                    name="date_from"
-                                                    value={values.date_from ? new Date(values.date_from) : null}
-                                                    label="Date from"
-                                                    placeholder={selectedOB.date_from || ''}
-                                                    rightSection={<IconCalendar />}
-                                                    style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))}
+                                                <TextInput
+                                                    label="Reference No."
+                                                    value={selectedOB.ob_no || ''}
+                                                    disabled
                                                 />
-                                                <DateInput
-                                                    name="date_to"
-                                                    value={values.date_to ? new Date(values.date_to) : null}
-                                                    label="Date to"
-                                                    placeholder={selectedOB.date_to || ''}
-                                                    rightSection={<IconCalendar />}
-                                                    style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))}
+                                                <Select
+                                                    label="OB Status"
+                                                    placeholder={selectedOB.status?.mf_status_name || ''}
+                                                    disabled
+                                                />
+
+                                                {/* Flexbox layout for Date From, Date To, and OB Days */}
+                                                <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                    <DateInput
+                                                        name="date_from"
+                                                        value={values.date_from ? new Date(values.date_from) : null}
+                                                        label="Date From"
+                                                        placeholder={selectedOB.date_from || ''}
+                                                        rightSection={<IconCalendar />}
+                                                        style={{ flex: 1 }}
+                                                        onChange={(value) =>
+                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                        }
+                                                    />
+                                                    <DateInput
+                                                        name="date_to"
+                                                        value={values.date_to ? new Date(values.date_to) : null}
+                                                        label="Date To"
+                                                        placeholder={selectedOB.date_to || ''}
+                                                        rightSection={<IconCalendar />}
+                                                        style={{ flex: 1 }}
+                                                        onChange={(value) =>
+                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                        }
+                                                    />
+                                                    <TextInput
+                                                        label="OB Days"
+                                                        name="ob_days"
+                                                        value={values.ob_days}
+                                                        placeholder={selectedOB.ob_days}
+                                                        disabled
+                                                        style={{ width: 100 }}
+                                                    />
+                                                </Box>
+
+                                                <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                    <TimeInput
+                                                        label="Time From"
+                                                        name="time_from"
+                                                        value={values.time_from}
+                                                        placeholder={selectedOB.time_from}
+                                                        ref={ref}
+                                                        rightSection={pickerControl}
+                                                        style={{ flex: 1 }}
+                                                        onChange={(event) =>
+                                                            handleChange(event.target.name, event.target.value)
+                                                        }
+                                                    />
+                                                    <TimeInput
+                                                        label="Time To"
+                                                        name="time_to"
+                                                        value={values.time_to}
+                                                        placeholder={selectedOB.time_to}
+                                                        ref={ref2}
+                                                        rightSection={pickerControl2}
+                                                        style={{ flex: 1 }}
+                                                        onChange={(event) =>
+                                                            handleChange(event.target.name, event.target.value)
+                                                        }
+                                                    />
+                                                </Box>
+
+                                                <TextInput
+                                                    label="Destination"
+                                                    value={selectedOB.destination || ''}
+                                                    onChange={(e) =>
+                                                        setSelectedOB({ ...selectedOB, destination: e.target.value })
+                                                    }
+                                                    style={{ marginTop: '1rem' }}
                                                 />
                                                 <TextInput
-                                                    label="OB Days"
-                                                    name="ob_days"
-                                                    value={values.ob_days}
-                                                    disabled
-                                                    style={{ width: 100 }}
+                                                    label="Person To Meet"
+                                                    value={selectedOB.person_to_meet || ''}
+                                                    onChange={(e) =>
+                                                        setSelectedOB({ ...selectedOB, person_to_meet: e.target.value })
+                                                    }
+                                                    style={{ marginTop: '1rem' }}
                                                 />
-                                                <TimeInput
-                                                    label="Time From"
-                                                    name="time_from"
-                                                    value={values.time_from}
-                                                    ref={ref}
-                                                    rightSection={pickerControl}
-                                                    style={{ width: 175 }}
-                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                                <TextInput
+                                                    label="Purpose"
+                                                    value={selectedOB.ob_purpose || ''}
+                                                    onChange={(e) =>
+                                                        setSelectedOB({ ...selectedOB, ob_purpose: e.target.value })
+                                                    }
+                                                    style={{ marginTop: '1rem' }}
+                                                />
+                                                <FileInput
+                                                    label="Attachment"
+                                                    onChange={(file) => setSelectedOB({ ...selectedOB, ob_attach: file })}
+                                                    style={{ marginTop: '1rem' }}
+                                                    placeholder={selectedOB.ob_attach}
+                                                />
 
-                                                <TimeInput label="Time To"
-                                                    name="time_to"
-                                                    value={values.time_to}
-                                                    ref={ref2}
-                                                    rightSection={pickerControl2}
-                                                    style={{ width: 175 }}
-                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
-                                                <TextInput name="destination" label="Destination" value={selectedOB.destination || ''} onChange={(e) => setSelectedOB({ ...selectedOB, destination: e.target.value })} />
-                                                <TextInput label="Person To Meet" value={selectedOB.person_to_meet || ''} onChange={(e) => setSelectedOB({ ...selectedOB, person_to_meet: e.target.value })} />
-                                                <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} onChange={(e) => setSelectedOB({ ...selectedOB, ob_purpose: e.target.value })} />
-                                                <Button type="submit" className="mt-3" color="teal">Submit</Button>
-
+                                                <Button
+                                                    type="submit"
+                                                    className="mt-3"
+                                                    color="teal"
+                                                    style={{ marginTop: '1rem' }}
+                                                >
+                                                    Submit
+                                                </Button>
                                             </>
                                         )}
                                     </form>
-
                                 </Modal>
+
                             </Card.Body>
                         </Tabs.Panel>
 

@@ -39,3 +39,8 @@ Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])
 Route::get('/OB_Module/ob_entry/', [OBController::class, 'index'])->middleware('auth');
 Route::post('/OB_Module/ob_entry/', [OBController::class, 'OBEntry']);
 Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']);
+Route::delete('/OB_Module/ob_entry/{id}', [OBController::class, 'deleteOBRequest'])->name('delete.ob');
+Route::get('/OB_Module/ob_appr_list', [OBController::class, 'OBApprList'])->middleware('auth')->name('obapprlist.show');
+Route::post('/OB_Module/ob_appr_list', [OBController::class, 'updateAll'])->name('obupdate.all');
+Route::post('/OB_Module/ob_appr_list/edit', [OBController::class, 'editOBApprRequest']);
+Route::post('/OB_Module/ob_appr_list/edit/{id}', [OBController::class, 'updateOBRequest']);

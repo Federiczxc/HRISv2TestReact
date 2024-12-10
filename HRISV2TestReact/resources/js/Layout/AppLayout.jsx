@@ -13,7 +13,7 @@ const AppLayout = ({ children }) => {
             {/* Navbar */}
             <Navbar />
             {/* Main Content */}
-            <MantineProvider>
+            <MantineProvider >
             <Notifications/>
             <ModalsProvider>
                 

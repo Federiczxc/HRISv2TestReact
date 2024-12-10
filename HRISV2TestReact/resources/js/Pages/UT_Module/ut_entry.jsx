@@ -273,6 +273,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 )}
                             </Table.Tbody>
                             {/* Pagination */}
+                            
                             <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                         </Table>
                         <Modal opened={opened} onClose={close} title="UT Request Details" centered>

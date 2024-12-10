@@ -9,7 +9,7 @@ import { router } from '@inertiajs/react'
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 
-export default function ut_entry({ UTPendingList, UTUpdatedList, viewUTPendingRequest }) {
+export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendingRequest }) {
 
     /* UT Pending List Declaration */
     /*     const { data: pendingData,
