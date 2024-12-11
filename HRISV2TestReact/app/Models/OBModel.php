@@ -53,4 +53,6 @@ class OBModel extends Model
     {
         return $this->belongsTo(MFStatusModel::class, 'ob_status_id', 'mf_status_id');
     }
+
+    
 }

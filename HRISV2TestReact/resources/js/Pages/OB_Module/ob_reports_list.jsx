@@ -6,9 +6,9 @@ import { IconClock, IconDownload } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { MantineReactTable, useMantineReactTable } from "mantine-react-table";
 import { mkConfig, generateCsv, download } from 'export-to-csv';
-export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) {
+export default function ut_reports_list({ OBReportsList, viewOBReportRequest }) {
 
-    const data = UTReportsList
+    const data = OBReportsList
     const formatTime = (time) => {
         const timeParts = time.split(':');
         const hours = parseInt(timeParts[0]);
@@ -20,44 +20,78 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
     };
     const columns = [
         {
-            accessorKey: 'ut_no',
+            accessorKey: 'ob_no',
             header: 'Reference No.',
+            grow: true,
             enableResizing: false,
-
         },
         {
             accessorKey: 'user.name',
             header: 'Name',
+            grow: true,
+            size: 200,
         },
         {
             accessorKey: 'status.mf_status_name',
             header: 'Status',
+            grow: true,
+            size: 150,
+            enableResizing: false,
+        },
+        {
+            accessorKey: 'date_from',
+            header: 'Date From',
+            grow: true,
+            size: 200,
             enableResizing: false,
 
         },
         {
-            accessorKey: 'ut_date',
-            header: 'Date',
+            accessorKey: 'date_to',
+            header: 'Date To',
+            grow: true,
+            size: 200,
             enableResizing: false,
 
         },
         {
-            accessorKey: 'ut_time',
-            header: 'Time',
-            enableResizing: false,
-
+            accessorKey: 'time_from',
+            header: 'Time From',
             Cell: ({ cell }) => {
                 const timeValue = cell.getValue();
                 const formattedTime = formatTime(timeValue.split('.')[0]);
                 return <span>{formattedTime}</span>;
             },
+            enableResizing: false,
+
         },
         {
-            accessorKey: 'ut_reason',
-            header: 'Reason',
+            accessorKey: 'time_to',
+            header: 'Time To',
+            Cell: ({ cell }) => {
+                const timeValue = cell.getValue();
+                const formattedTime = formatTime(timeValue.split('.')[0]);
+                return <span>{formattedTime}</span>;
+            },
+            enableResizing: false,
+
+
+        },
+        {
+            accessorKey: 'destination',
+            header: 'Destination',
             Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
         },
-
+        {
+            accessorKey: 'person_to_meet',
+            header: 'Person To Meet',
+            Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
+        },
+        {
+            accessorKey: 'ob_purpose',
+            header: 'Purpose',
+            Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
+        },
         {
             accessorKey: 'created_date',
             header: 'Date Filed',
@@ -68,14 +102,13 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
             accessorKey: 'first_approver',
             header: 'First Approver',
         },
-    
         {
             accessorKey: 'sec_approver',
             header: 'Second Approver',
         },
         {
             accessorKey: 'approver_name',
-            header: 'Approved By',
+            header: 'Approved By ',
         },
         {
             accessorKey: 'approved_date',
@@ -90,7 +123,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         fieldSeparator: ',',
         decimalSeparaator: '.',
         useKeysAsHeaders: true,
-        filename: 'UT_Reports_List',
+        filename: 'OB_Reports_List',
 
     })
 
@@ -99,19 +132,22 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
         );
-    
+
         const rowData = rows.map((row) => {
             const mappedRow = {};
-    
+
             visibleColumns.forEach((column) => {
                 let value = row.original[column.accessorKey];
-    
+
                 // Handle nested fields like user.name and status.mf_status_name
                 if (column.accessorKey === 'user.name') {
                     value = row.original.user?.name; // Access the user name
                 } else if (column.accessorKey === 'status.mf_status_name') {
                     value = row.original.status?.mf_status_name; // Access the status name
-                } else if (column.accessorKey === 'ut_time') {
+                } else if (column.accessorKey === 'time_from') {
+                    value = formatTime(value.split('.')[0]);
+                }
+                else if (column.accessorKey === 'time_to') {
                     value = formatTime(value.split('.')[0]);
                 } else if (
                     column.accessorKey === 'created_date' ||
@@ -119,33 +155,36 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                 ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
-    
+
                 mappedRow[column.header] = value;
             });
-    
+
             return mappedRow;
         });
-    
+
         const csv = generateCsv(csvConfig)(rowData);
         download(csvConfig)(csv);
     };
-    
+
     const handleExportData = () => {
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
         );
-    
+
         const mappedData = data.map((row) => {
             const mappedRow = {};
-    
+
             visibleColumns.forEach((column) => {
                 let value = row[column.accessorKey];
-    
+
                 if (column.accessorKey === 'user.name') {
-                    value = row.user?.name; 
+                    value = row.user?.name;
                 } else if (column.accessorKey === 'status.mf_status_name') {
-                    value = row.status?.mf_status_name; 
-                } else if (column.accessorKey === 'ut_time') {
+                    value = row.status?.mf_status_name;
+                } else if (column.accessorKey === 'time_from') {
+                    value = formatTime(value.split('.')[0]);
+                }
+                else if (column.accessorKey === 'time_to') {
                     value = formatTime(value.split('.')[0]);
                 } else if (
                     column.accessorKey === 'created_date' ||
@@ -153,17 +192,17 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
                 ) {
                     value = dayjs(value).format('YYYY-MM-DD'); // Format date
                 }
-    
+
                 mappedRow[column.header] = value;
             });
-    
+
             return mappedRow;
         });
-    
+
         const csv = generateCsv(csvConfig)(mappedData);
         download(csvConfig)(csv);
     };
-    
+
 
 
     const table = useMantineReactTable({
@@ -179,10 +218,8 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
             density: 'xs',
             columnVisibility: {
                 created_date: false,
-                first_apprv_name: false,
-                sec_apprv_name: false,
-                first_apprv_no: false,
-                sec_apprv_no: false,
+                first_approver: false,
+                sec_approver: false,
                 approved_date: false,
                 'mrt-row-expand': false,
             }
@@ -193,7 +230,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
 
                     gap: '16px',
                     padding: '8px',
-                    flexWrap: 'wrap',
+
                 }}
             >
                 <Button
@@ -243,13 +280,7 @@ export default function ut_reports_list({ UTReportsList, viewUTReportRequest }) 
 
     return (
         <AppLayout>
-
-
-
             <MantineReactTable table={table} />
-
-
-
-        </AppLayout >
+        </AppLayout>
     )
 }

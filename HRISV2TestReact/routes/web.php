@@ -26,6 +26,7 @@ Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboar
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
 Route::get('/UT_Module/ut_entry/', [UTController::class, 'index'])->middleware('auth')->name('ut.entry');
 Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest'])->middleware('auth');
+Route::post('/UT_Module/ut_entry/{id}', [UTController::class, 'spoilUTRequest']);
 Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest'])->name('delete.ut');
 Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
 Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
@@ -39,8 +40,10 @@ Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])
 Route::get('/OB_Module/ob_entry/', [OBController::class, 'index'])->middleware('auth');
 Route::post('/OB_Module/ob_entry/', [OBController::class, 'OBEntry']);
 Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']);
+/* Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']); */
 Route::delete('/OB_Module/ob_entry/{id}', [OBController::class, 'deleteOBRequest'])->name('delete.ob');
 Route::get('/OB_Module/ob_appr_list', [OBController::class, 'OBApprList'])->middleware('auth')->name('obapprlist.show');
 Route::post('/OB_Module/ob_appr_list', [OBController::class, 'updateAll'])->name('obupdate.all');
 Route::post('/OB_Module/ob_appr_list/edit', [OBController::class, 'editOBApprRequest']);
 Route::post('/OB_Module/ob_appr_list/edit/{id}', [OBController::class, 'updateOBRequest']);
+Route::get('/OB_Module/ob_reports_list', [OBController::class, 'OBReportsList'])->middleware('auth')->name('obreports.show');

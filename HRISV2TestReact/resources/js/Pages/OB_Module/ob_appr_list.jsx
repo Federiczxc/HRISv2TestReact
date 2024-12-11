@@ -361,7 +361,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, viewOBPendi
                                     {/* Pagination */}
                                     <Pagination total={totalPendingPages} value={activePendingPage} onChange={setActivePendingPage} color="lime.4" mt="sm" />
                                 </Table>
-                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details" centered>
+                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details">
                                     <form onSubmit={handleEditSubmit}>
 
                                         {selectedPendingOB && (
@@ -442,16 +442,21 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, viewOBPendi
                                                     value={selectedPendingOB.appr_remarks || ''}
                                                     onChange={(e) => setSelectedPendingOB({ ...selectedPendingOB, appr_remarks: e.target.value })} />
                                                 {selectedPendingOB.ob_attach ? (
-                <Image
-                    style={{ marginTop: '1rem' }}
-                    w={256}
-                    h={256}
-                    centered
-                    src={`/storage/${selectedPendingOB.ob_attach}`}
-                />
-            ) : (
-                <p>No attachment available.</p>
-            )}
+                                                    <Box w={300}>
+
+                                                        <Text truncate="start">{selectedPendingOB.ob_attach}</Text>
+                                                        <Image
+                                                            style={{ marginTop: '1rem' }}
+                                                            w={256}
+                                                            h={256}
+                                                            
+                                                            src={`/storage/${selectedPendingOB.ob_attach}`}
+                                                        />
+                                                    </Box>
+
+                                                ) : (
+                                                    <p>No attachment available.</p>
+                                                )}
 
                                                 <Button type="submit" className="mt-3" color="teal"> Submit</Button>
                                             </>
@@ -523,7 +528,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, viewOBPendi
                                     {/* Pagination */}
                                     <Pagination total={totalUpdatedPages} value={activeUpdatedPage} onChange={setActiveUpdatedPage} mt="sm" />
                                 </Table>
-                                <Modal size="l" opened={opened2} onClose={close2} title="OB Request Details" centered>
+                                <Modal size="l" opened={opened2} onClose={close2} title="OB Request Details">
 
                                     {selectedPendingOB && (
                                         <>
@@ -596,7 +601,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, viewOBPendi
 
                                                 <TextInput
                                                     label="Approved by"
-                                                    placeholder={selectedPendingOB.approved_by}
+                                                    placeholder={selectedPendingOB.approver_name}
                                                     disabled />
 
                                                 <DateInput
@@ -609,6 +614,24 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, viewOBPendi
                                                 value={selectedPendingOB.appr_remarks || ''}
                                                 disabled
                                             />
+
+                                            {selectedPendingOB.ob_attach ? (
+                                                <Box w={300}>
+
+                                                    <Text truncate="start">{selectedPendingOB.ob_attach}</Text>
+                                                    <Image
+                                                        style={{ marginTop: '1rem' }}
+                                                        w={256}
+                                                        h={256}
+                                                        
+                                                        src={`/storage/${selectedPendingOB.ob_attach}`}
+                                                    />
+                                                </Box>
+
+                                            ) : (
+                                                <p>No attachment available.</p>
+                                            )}
+
 
                                         </>
                                     )}

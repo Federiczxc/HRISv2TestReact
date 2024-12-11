@@ -118,8 +118,12 @@ export default function ob_entry({ OBList, viewOBRequest }) {
         )
     }
     const preview = values.ob_attach && values.ob_attach instanceof File ? (
+
         <Image
             key={values.ob_attach.name}
+            style={{ marginTop: '1rem' }}
+            w={256}
+            h={256}
             src={URL.createObjectURL(values.ob_attach)}
             onLoad={() => URL.revokeObjectURL(values.ob_attach)}
             alt="Preview"
@@ -131,7 +135,7 @@ export default function ob_entry({ OBList, viewOBRequest }) {
     </ActionIcon>);
     const ref2 = useRef(null);
     const pickerControl2 = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref2.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
-        <IconCalendar style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
+        <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
     </ActionIcon>);
 
     function handleEditSubmit(e) {
@@ -245,7 +249,40 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                     placeholder="Pick date"
                                                     rightSection={<IconCalendar />}
                                                     style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))}
+                                                    onChange={(value) => {
+                                                        if (value) {
+
+                                                            const selectedDate = new Date(value);
+                                                            const today = new Date();
+                                                            const dateTo = new Date(values.date_to);
+                                                            today.setHours(0, 0, 0, 0);
+                                                            if (selectedDate < today) {
+                                                                notifications.show({
+                                                                    title: 'Warning',
+                                                                    message: `You are currently late filing a UT Request`,
+                                                                    position: 'top-center',
+                                                                    color: 'yellow',
+                                                                    autoClose: 5000,
+                                                                })
+                                                            }
+
+                                                            if (selectedDate > dateTo) {
+                                                                notifications.show({
+                                                                    title: 'Error',
+                                                                    message: `The "Date From" cannot be later than "Date To".`,
+                                                                    position: 'top-center',
+                                                                    color: 'red',
+                                                                    autoClose: 5000,
+                                                                })
+                                                            } else {
+                                                                handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+
+                                                            }
+                                                        } else {
+                                                            handleChange("date_from", '');
+                                                        }
+                                                    }}
+
                                                 />
                                                 <DateInput
                                                     name="date_to"
@@ -254,14 +291,34 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                     placeholder="Pick date"
                                                     rightSection={<IconCalendar />}
                                                     style={{ width: 175 }}
-                                                    onChange={(value) => handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))}
+                                                    onChange={(value) => {
+                                                        if (value) {
+                                                            const dateFrom = new Date(values.date_from);
+                                                            const selectedDate = new Date(value);
+                                                            if (selectedDate < dateFrom) {
+                                                                notifications.show({
+                                                                    title: 'Error',
+                                                                    message: `The "Date to" cannot be earlier than "Date from".`,
+                                                                    position: 'top-center',
+                                                                    color: 'red',
+                                                                    autoClose: 5000,
+                                                                })
+                                                            } else {
+                                                                handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                            }
+                                                        }
+                                                        else {
+                                                            handleChange("date_to", '');
+                                                        }
+                                                    }}
                                                 />
-                                                <TextInput
+                                                < TextInput
                                                     label="OB Days"
                                                     name="ob_days"
                                                     value={values.ob_days}
                                                     disabled
-                                                    style={{ width: 100 }}
+                                                    style={{ width: 100 }
+                                                    }
                                                 />
                                             </Box>
 
@@ -343,6 +400,7 @@ export default function ob_entry({ OBList, viewOBRequest }) {
 
                                             {preview}
 
+
                                         </Box>
 
                                     </Box>
@@ -388,8 +446,14 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                         <Table.Td> {ob.status?.mf_status_name}</Table.Td>
                                                         <Table.Td> {formatDate(ob.created_date)}</Table.Td>
                                                         <Table.Td>   <Button onClick={() => handleViewClick(ob.ob_id)} className="btn btn-primary btn-sm">View</Button>
-                                                            <Button onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-3">Edit</Button>
-                                                            <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-3">Delete</Button></Table.Td>
+                                                            {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
+                                                                <Button onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-2">Edit</Button>
+                                                            )}
+                                                            {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
+                                                                <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2">Delete</Button>
+
+                                                            )}
+                                                        </Table.Td>
                                                     </Table.Tr>
                                                 );
                                             })
@@ -400,7 +464,7 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                     </Table.Tbody>
                                     <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                                 </Table>
-                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details" centered>
+                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details">
                                     {selectedOB && (
                                         <>
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -434,10 +498,26 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                             <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} disabled />
                                             <DateInput label="Date Filed" placeholder={formatDate(selectedOB.created_date) || ''} disabled />
 
-                                            <Box style={{ display: 'flex', gap: '1rem'}}>
-                                                <TextInput label="Approved by" placeholder={selectedOB.approved_by || ''} disabled />
-                                                <TextInput label="Approved Date" placeholder={selectedOB.approved_by || ''} disabled />
+                                            <Box style={{ display: 'flex', gap: '1rem' }}>
+                                                <TextInput label="Approved by" placeholder={selectedOB.approver_name || ''} disabled />
+                                                <TextInput label="Approved Date" placeholder={selectedOB.approved_date || ''} disabled />
                                             </Box>
+                                            {selectedOB.ob_attach ? (
+                                                <Box w={300}>
+
+                                                    <Text truncate="start">{selectedOB.ob_attach}</Text>
+                                                    <Image
+                                                        style={{ marginTop: '1rem' }}
+                                                        w={256}
+                                                        h={256}
+                                                        centered
+                                                        src={`/storage/${selectedOB.ob_attach}`}
+                                                    />
+                                                </Box>
+
+                                            ) : (
+                                                <p>No attachment available.</p>
+                                            )}
 
                                         </>
                                     )}
@@ -466,9 +546,39 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                         placeholder={selectedOB.date_from || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
-                                                        onChange={(value) =>
-                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
-                                                        }
+                                                        onChange={(value) => {
+                                                            if (value) {
+                                                                const selectedDate = new Date(value);
+                                                                const today = new Date();
+                                                                const dateTo = new Date(values.date_to);
+                                                                today.setHours(0, 0, 0, 0);
+                                                                if (selectedDate < today) {
+                                                                    notifications.show({
+                                                                        title: 'Warning',
+                                                                        message: 'You are currently late filing a UT Request',
+                                                                        position: 'top-right',
+                                                                        color: 'yellow',
+                                                                        autoclose: 5000,
+                                                                    })
+                                                                }
+
+                                                                if (selectedDate > dateTo) {
+                                                                    notifications.show({
+                                                                        title: 'Error',
+                                                                        message: `The "Date From" cannot be later than "Date To".`,
+                                                                        position: 'top-right',
+                                                                        color: 'red',
+                                                                        autoClose: 5000,
+                                                                    })
+                                                                } else {
+                                                                    handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+
+                                                                }
+                                                            } else {
+                                                                handleChange("date_from", '');
+
+                                                            }
+                                                        }}
                                                     />
                                                     <DateInput
                                                         name="date_to"
@@ -477,8 +587,26 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                         placeholder={selectedOB.date_to || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
-                                                        onChange={(value) =>
-                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                        onChange={(value) => {
+                                                            if (value) {
+                                                                const dateFrom = new Date(values.date_from);
+                                                                const selectedDate = new Date(value);
+                                                                if (selectedDate < dateFrom) {
+                                                                    notifications.show({
+                                                                        title: 'Error',
+                                                                        message: `The "Date to" cannot be earlier than "Date from ".`,
+                                                                        position: 'top-right',
+                                                                        color: 'red',
+                                                                        autoClose: 5000,
+                                                                    })
+                                                                } else {
+                                                                    handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+
+                                                                }
+                                                            } else {
+                                                                handleChange("date_to", '');
+                                                            }
+                                                        }
                                                         }
                                                     />
                                                     <TextInput

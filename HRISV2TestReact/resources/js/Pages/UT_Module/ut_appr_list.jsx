@@ -291,9 +291,9 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                         <Tabs.Panel value="pending">
                             <Card.Body>
                                 <Card.Title>Undertime Pending List</Card.Title>
-                                <div>
+                                
                                     <Button onClick={() => openModal()} color='green'> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button></div>
+                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
@@ -424,7 +424,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                                                 <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
 
                                                 <label>Approved by: </label>
-                                                <Input placeholder={selectedPendingUT.approved_by} disabled />
+                                                <Input placeholder={selectedPendingUT.approver_name} disabled />
 
                                                 <label>Approved Date: </label>
                                                 <DateInput placeholder={formatDate(selectedPendingUT.approved_date)} disabled />
@@ -523,7 +523,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                                             <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
 
                                             <label>Approved by: </label>
-                                            <Input placeholder={selectedPendingUT.approved_by} disabled />
+                                            <Input placeholder={selectedPendingUT.approver_name} disabled />
 
                                             <label>Approved Date: </label>
                                             <DateInput placeholder={formatDate(selectedPendingUT.approved_date)} disabled />

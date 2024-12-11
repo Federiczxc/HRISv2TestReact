@@ -47,6 +47,10 @@ const Navbar = () => {
           <li className="nav-item active">
             <a className="nav-link" href="/OB_Module/ob_appr_list"> OB Approval</a>
           </li>
+
+          <li className="nav-item active">
+            <a className="nav-link" href="/OB_Module/ob_reports_list"> OB Reports</a>
+          </li>
           {/* Logout link */}
           {auth.user ? <li className="nav-item">
             <a

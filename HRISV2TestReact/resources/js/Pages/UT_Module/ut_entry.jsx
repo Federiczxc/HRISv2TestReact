@@ -5,7 +5,6 @@ import { Container, Card, Form } from 'react-bootstrap';
 import { ActionIcon, rem, Table, Textarea, Modal, Button, Input, TextInput, Select, Pagination } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock } from '@tabler/icons-react';
-import { Inertia } from '@inertiajs/inertia';
 import { notifications } from '@mantine/notifications';
 
 export default function ut_entry({ UTList, viewUTRequest }) {
@@ -23,15 +22,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     );
 
     const [selectedUT, setSelectedUT] = useState(viewUTRequest);
-    /* const [UTListDisplay, setUTListDisplay] = useState({
-        data: UTList,  // Initial empty array for storing the data
-        current_page: 1,
-        last_page: 1,
-        next_page_url: null,
-        prev_page_url: null,
-    });
 
-    console.log(UTListDisplay.data); */
     function handleChange(name, value) {
         setValues((prevValues) => ({
             ...prevValues,
@@ -65,6 +56,35 @@ export default function ut_entry({ UTList, viewUTRequest }) {
         });
     }
 
+    function handleSpoil(utId) {
+        router.post(`/UT_Module/ut_entry/${utId}`, {
+            ut_status_id : 4,
+            OnError: (errors) => {
+                notifications.show({
+                    title: 'Error',
+                    message: `Failed to delete the entry: ${errors} `,
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+                console.error('Submission Error', errors);
+            },
+
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: 'Edit Success!',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+
+
+            },
+            
+
+        });
+    }
     function handleDelete(utId) {
         router.delete(`/UT_Module/ut_entry/${utId}`, {
             onError: (errors) => {
@@ -120,8 +140,8 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
 
             },
+            
 
-            F
         });
         close2();
     }
@@ -262,8 +282,16 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                                 <Table.Td>{formatDate(ut.created_date)}</Table.Td>
                                                 <Table.Td>
                                                     <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
-                                                    <Button onClick={() => handleEditClick(ut.id)} color="yellow" className="ms-3">Edit</Button>
-                                                    <Button onClick={() => handleDelete(ut.id)} color="red" className="ms-3">Delete</Button>
+                                                    {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
+                                                        <Button onClick={() => handleEditClick(ut.id)} color="yellow" className="ms-2">Edit</Button>
+
+                                                    )}
+                                                    {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
+                                                        <Button onClick={() => handleSpoil(ut.id)} color="red" className="ms-2">Delete</Button>
+
+
+                                                    )}
+
                                                 </Table.Td>
                                             </Table.Tr>
                                         );
@@ -273,7 +301,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
                                 )}
                             </Table.Tbody>
                             {/* Pagination */}
-                            
+
                             <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                         </Table>
                         <Modal opened={opened} onClose={close} title="UT Request Details" centered>
@@ -289,7 +317,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
                                     <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
 
-                                    <Input label="Approved by" placeholder={selectedUT.approved_by} disabled />
+                                    <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
 
                                     <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
                                 </>

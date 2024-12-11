@@ -7,7 +7,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use App\Models\User;
 use App\Models\OBModel;
-use App\Models\UTModel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\CssSelector\Node\SelectorNode;
@@ -19,7 +18,14 @@ class OBController extends Controller
     public function index()
     {
         $currentUser = Auth::user()->emp_no;
-        $obList = OBModel::with(['user', 'status'])->where('emp_no', $currentUser)->get();
+        $obList = OBModel::with(['user', 'status'])
+            ->where('emp_no', $currentUser)
+            ->get()
+            ->map(function ($ob) {
+                $approver = User::where('emp_no', $ob->approved_by)->first();
+                $ob->approver_name = $approver ? $approver->name : null;
+                return $ob;
+            });
         return Inertia::render('OB_Module/ob_entry', [
             'OBList' => $obList
         ]);
@@ -29,9 +35,9 @@ class OBController extends Controller
     {
         $request->validate([
             'destination' => 'required',
-            'date_from' => 'required',
+            'date_from' => 'required|date|before_or_equal:date_to',
             'time_from' => 'required',
-            'date_to' => 'required',
+            'date_to' => 'required|date|after_or_equal:date_from',
             'time_to' => 'required',
             'person_to_meet' => 'required',
             'ob_purpose' => 'required'
@@ -46,11 +52,15 @@ class OBController extends Controller
         } else {
             $path = NULL;
         }
+        $today = now()->startOfDay(); // Start of today for comparison
+        $dateFrom = \Carbon\Carbon::parse($request->date_from);
+
+        $obTypeId = $dateFrom->lt($today) ? 2 : 1;
 
         $obEntry = OBModel::create([
             'ob_status_id' => 1,
             'ob_no' => $newOBNo,
-            'ob_type_id' => 1,
+            'ob_type_id' => $obTypeId,
             'emp_no' => $user->emp_no,
             'destination' => $request->destination,
             'date_from' => $request->date_from,
@@ -77,21 +87,18 @@ class OBController extends Controller
             'viewOBRequest' => $viewOBRequest,
         ]);
     }
-    public function deleteOBRequest($id)
-    {
-        $deleteOBRequest = OBModel::findorfail($id);
-        $deleteOBRequest->delete();
-        return redirect()->intended('/OB_Module/ob_entry');
-    }
+
     public function editOBRequest(Request $request)
     {
-        $ob = OBModel::where('ob_no', $request->ob_no)->first();
+        $ob = OBModel::where('ob_no', $request->ob_no) //Can only edit Pending
+            ->where('ob_status_id', 1)
+            ->first();
         $user = Auth::user()->emp_no;
         $request->validate([
             'destination' => 'required',
-            'date_from' => 'required',
+            'date_from' => 'required|date|before_or_equal:date_to', //Can only input dates before or equal "date to"
             'time_from' => 'required',
-            'date_to' => 'required',
+            'date_to' => 'required|date|after_or_equal:date_from', //Can only input dates after or equal "date from"
             'time_to' => 'required',
             'person_to_meet' => 'required',
             'ob_purpose' => 'required'
@@ -117,33 +124,62 @@ class OBController extends Controller
         return redirect()->intended('/OB_Module/ob_entry');
     }
 
+    public function deleteOBRequest($id)
+    {
+        $deleteOBRequest = OBModel::where('id', $id)->where('ob_status_id', 1)->first(); //only pending can be deleted
+
+        if ($deleteOBRequest) {
+            $deleteOBRequest->delete();
+        }
+        return redirect()->intended('/OB_Module/ob_entry');
+    }
+
     public function OBApprList()
     {
         $apprvID = Auth::user()->emp_no;
-        $appr_pendings = OBModel::with(['user', 'status'])->where(function ($query) use ($apprvID) {
+        $appr_pendings = OBModel::with(['user', 'status'])->where(function ($query) use ($apprvID) { //Can view requests regardless if 1st or 2nd appr
             $query->where('first_apprv_no', $apprvID)
                 ->orWhere('sec_apprv_no', $apprvID);
         })
             ->where(function ($query) {
                 $query->where('ob_status_id', '1');
             })
-            ->get();
+            ->get()
+            ->map(function ($ob) {
+                $approver = User::where('emp_no', $ob->approved_by)->first();
+                $ob->approver_name = $approver ? $approver->name : null; //match emp_no approved by to user emp_no get name
+                $first_appr = User::where('emp_no', $ob->first_apprv_no)->first();
+                $ob->first_approver = $first_appr ? $first_appr->name : null; //match first_apprv_no to emp_no
+                $sec_appr = User::where('emp_no', $ob->sec_apprv_no)->first();
+                $ob->sec_approver = $sec_appr ? $sec_appr->name : null; //match sec_apprv_no to emp_no
+
+                return $ob;
+            });
         $appr_updated = OBModel::with(['user', 'status'])->where(function ($query) use ($apprvID) {
             $query->where('first_apprv_no', $apprvID)
                 ->orWhere('sec_apprv_no', $apprvID);
         })
             ->where(function ($query) {
-                $query->where('ob_status_id', '2')
-                    ->orWhere('ob_status_id', '3');
+                $query->where('ob_status_id', '2') //approved
+                    ->orWhere('ob_status_id', '3'); //disapproved
             })
-            ->get();
+            ->get()
+            ->map(function ($ob) {
+                $approver = User::where('emp_no', $ob->approved_by)->first();
+                $ob->approver_name = $approver ? $approver->name : null;
+                $first_appr = User::where('emp_no', $ob->first_apprv_no)->first();
+                $ob->first_approver = $first_appr ? $first_appr->name : null; //match first_apprv_no to emp_no
+                $sec_appr = User::where('emp_no', $ob->sec_apprv_no)->first();
+                $ob->sec_approver = $sec_appr ? $sec_appr->name : null; //match sec_apprv_no to emp_no
+                return $ob;
+            });
         return Inertia::render('OB_Module/ob_appr_list', [
             'OBPendingList' => $appr_pendings,
             'OBUpdatedList' => $appr_updated,
         ]);
     }
 
-    public function updateAll(Request $request)
+    public function updateAll(Request $request) //Batch update
     {
         $currentUser = Auth::user()->emp_no;
         $validated = $request->validate(['action' => 'required',]);
@@ -168,27 +204,6 @@ class OBController extends Controller
         return redirect()->intended('/OB_Module/ob_appr_list');
     }
 
-    public function editOBApprRequest(Request $request) //MODAL EDIT
-    {
-        $ob = OBModel::where('ob_no', $request->ob_no)->first();
-        $validated = $request->validate([
-            'ob_status_id' => 'required|in:2,3',
-            'appr_remarks' => 'nullable|string' // Validate that it is either 2 or 3
-
-        ]);
-        $currentUser = Auth::user()->emp_no;
-
-        $ob->update([
-            'ob_status_id' => $validated['ob_status_id'],
-            'appr_remarks' => $validated['appr_remarks'],
-            'approved_by' => $currentUser,
-            'approved_date' => Carbon::now(),
-            'updated_by' => $currentUser,
-            'updated_date' => Carbon::now(),
-        ]);
-        /* return response()->json(['message' => 'UT request updated successfully!', 'ut' => $ut]); */
-        return redirect()->intended('/OB_Module/ob_appr_list');
-    }
     public function updateOBRequest(Request $request, $id) //QuickEdit
     {
         $validated = $request->validate([
@@ -207,5 +222,50 @@ class OBController extends Controller
         ]);
         $selectedOB->refresh();
         return redirect()->intended('/OB_Module/ob_appr_list');
+    }
+
+    public function editOBApprRequest(Request $request) //MODAL EDIT
+    {
+        $ob = OBModel::where('ob_no', $request->ob_no)->first();
+        $validated = $request->validate([
+            'ob_status_id' => 'required|in:2,3',
+            'appr_remarks' => 'nullable|string' // Validate that it is either 2 or 3
+
+        ]);
+        $currentUser = Auth::user()->emp_no;
+
+        $ob->update([
+            'ob_status_id' => $validated['ob_status_id'],
+            'appr_remarks' => $validated['appr_remarks'],
+            'approved_by' => $currentUser,
+            'approved_date' => Carbon::now(),
+            'updated_by' => $currentUser,
+            'updated_date' => Carbon::now(),
+        ]);
+        return redirect()->intended('/OB_Module/ob_appr_list');
+    }
+
+
+    public function OBReportsList()
+    {
+        $apprvID = Auth::user()->emp_no;
+
+        $appr_list = OBModel::with(['user', 'status'])
+            ->where('first_apprv_no', $apprvID)
+            ->orWhere('sec_apprv_no', $apprvID)
+            ->get()
+            ->map(function ($ob) {
+                $approver = User::where('emp_no', $ob->approved_by)->first();
+                $ob->approver_name = $approver ? $approver->name : null; //Can see requests under him
+                $first_appr = User::where('emp_no', $ob->first_apprv_no)->first();
+                $ob->first_approver = $first_appr ? $first_appr->name : null; //match first_apprv_no to emp_no
+                $sec_appr = User::where('emp_no', $ob->sec_apprv_no)->first();
+                $ob->sec_approver = $sec_appr ? $sec_appr->name : null; //match sec_apprv_no to emp_no
+
+                return $ob;
+            });
+        return Inertia::render('OB_Module/ob_reports_list', [
+            'OBReportsList' => $appr_list,
+        ]);
     }
 }
