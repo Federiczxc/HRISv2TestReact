@@ -32,7 +32,7 @@ class UTController extends Controller
             ->get();
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList,
-            'spoiledUTList' => $spoiledUTList,
+           'spoiledUTList' => $spoiledUTList,
         ]);
     }
 
@@ -117,7 +117,7 @@ class UTController extends Controller
     }
     public function deleteUTRequest($id)
     {
-        $deleteUTRequest = UTModel::where('id', $id)->where('ut_status_id', 1)->first(); //only pending can be deleted
+        $deleteUTRequest = UTModel::where('id', $id)->where('ut_status_id', 4)->first(); //only pending can be deleted
 
         if ($deleteUTRequest) {
             $deleteUTRequest->delete();

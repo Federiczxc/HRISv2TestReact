@@ -20,14 +20,20 @@ class OBController extends Controller
         $currentUser = Auth::user()->emp_no;
         $obList = OBModel::with(['user', 'status'])
             ->where('emp_no', $currentUser)
+            ->whereIn('ob_status_id', [1,2,3])
             ->get()
             ->map(function ($ob) {
                 $approver = User::where('emp_no', $ob->approved_by)->first();
                 $ob->approver_name = $approver ? $approver->name : null;
                 return $ob;
             });
+        $spoiledOBList = OBModel::with(['user', 'status'])
+            ->where('emp_no', $currentUser)
+            ->where('ob_status_id', 4)
+            ->get();
         return Inertia::render('OB_Module/ob_entry', [
-            'OBList' => $obList
+            'OBList' => $obList,
+            'spoiledOBList' => $spoiledOBList
         ]);
     }
 
@@ -124,9 +130,24 @@ class OBController extends Controller
         return redirect()->intended('/OB_Module/ob_entry');
     }
 
+    public function spoilOBRequest(Request $request, $id)
+    {
+        $spoilOBRequest = OBModel::where('ob_id', $id)->where('ob_status_id', 1)->first(); //only pending can be deleted
+        $validated = $request->validate([
+            'ob_status_id' => 'required|in:4',
+        ]);
+        $currentUser = Auth::user()->emp_no;
+        $spoilOBRequest->update([
+            'ob_status_id' => $validated['ob_status_id'],
+            'updated_by' => $currentUser,
+            'updated_date' => Carbon::now(),
+        ]);
+        return redirect()->intended('/OB_Module/ob_entry');
+    }
+
     public function deleteOBRequest($id)
     {
-        $deleteOBRequest = OBModel::where('id', $id)->where('ob_status_id', 1)->first(); //only pending can be deleted
+        $deleteOBRequest = OBModel::where('ob_id', $id)->where('ob_status_id', 4)->first(); //only pending can be deleted
 
         if ($deleteOBRequest) {
             $deleteOBRequest->delete();
@@ -226,7 +247,9 @@ class OBController extends Controller
 
     public function editOBApprRequest(Request $request) //MODAL EDIT
     {
-        $ob = OBModel::where('ob_no', $request->ob_no)->first();
+        $ob = OBModel::where('ob_no', $request->ob_no)
+            ->where('ob_status_id', 1)
+            ->first();
         $validated = $request->validate([
             'ob_status_id' => 'required|in:2,3',
             'appr_remarks' => 'nullable|string' // Validate that it is either 2 or 3

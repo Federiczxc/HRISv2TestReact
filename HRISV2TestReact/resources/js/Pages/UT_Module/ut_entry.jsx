@@ -1,28 +1,33 @@
 import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { router } from '@inertiajs/react'
-import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Table, Textarea, Modal, Button, Input, TextInput, Select, Pagination } from '@mantine/core';
+import { ActionIcon, Container, Box, Card, rem, Table, Textarea, Modal, Button, Tabs, TextInput, Select, Pagination } from '@mantine/core';
 import { DateInput, TimeInput } from '@mantine/dates';
-import { IconClock } from '@tabler/icons-react';
+import { IconClock, IconEye, IconEdit, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 
-export default function ut_entry({ UTList, viewUTRequest }) {
+export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
     const [values, setValues] = useState({
         ut_date: '',
         ut_time: '',
         ut_reason: '',
     })
     const [activePage, setActivePage] = useState(1);
-    const itemsPerPage = 2;
+    const itemsPerPage = 7;
     const totalPages = Math.ceil(UTList.length / itemsPerPage);
     const paginatedData = UTList.slice(
         (activePage - 1) * itemsPerPage,
         activePage * itemsPerPage
     );
-
+    const [activePage2, setActivePage2] = useState(1);
+    const itemsPerPage2 = 7;
+    const totalPages2 = Math.ceil(spoiledUTList.length / itemsPerPage2);
+    const paginatedData2 = spoiledUTList.slice(
+        (activePage2 - 1) * itemsPerPage2,
+        activePage2 * itemsPerPage2
+    );
+    const [tabValue, setTabValue] = useState("utentry");
     const [selectedUT, setSelectedUT] = useState(viewUTRequest);
-
     function handleChange(name, value) {
         setValues((prevValues) => ({
             ...prevValues,
@@ -57,8 +62,10 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     }
 
     function handleSpoil(utId) {
-        router.post(`/UT_Module/ut_entry/${utId}`, {
-            ut_status_id : 4,
+        const updatedValue = {
+            ut_status_id: 4
+        }
+        router.post(`/UT_Module/ut_entry/${utId}`, updatedValue, {
             OnError: (errors) => {
                 notifications.show({
                     title: 'Error',
@@ -73,7 +80,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
             onSuccess: () => {
                 notifications.show({
                     title: 'Success',
-                    message: 'Edit Success!',
+                    message: 'Delete Success! You may check it in Spoiled Tab',
                     color: 'green',
                     position: 'top-center',
                     autoClose: 5000,
@@ -81,7 +88,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
 
             },
-            
+
 
         });
     }
@@ -140,7 +147,7 @@ export default function ut_entry({ UTList, viewUTRequest }) {
 
 
             },
-            
+
 
         });
         close2();
@@ -188,183 +195,270 @@ export default function ut_entry({ UTList, viewUTRequest }) {
     const [editOpened, setEditOpened] = useState(false);
     const open2 = () => setEditOpened(true);
     const close2 = () => setEditOpened(false);
-    const { current_page, last_page, next_page_url, prev_page_url } = UTList;
+    const [openedForm, setOpenedForm] = useState(false);
+    const openForm = () => setOpenedForm(true);
+    const closeForm = () => setOpenedForm(false);
     const ref = useRef(null);
     const pickerControl = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
         <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
     </ActionIcon>);
     return (
         <AppLayout>
-            <Container className="mt-3">
-                <Card>
-                    <Card.Title className="ms-3 mt-3" style={{ color: "gray" }}>Undertime Entry</Card.Title>
-                    <Card.Body>
-                        <form onSubmit={handleSubmit}>
-                            <DateInput
-                                label="Date"
-                                name="ut_date"
-                                value={values.ut_date}
-                                placeholder="Pick date"
-                                onChange={(value) => {
-                                    if (value) {
-                                        const selectedDate = new Date(value);
-                                        const today = new Date();
-                                        today.setHours(0, 0, 0, 0);
-                                        if (selectedDate < today) {
-                                            notifications.show({
-                                                title: 'Warning',
-                                                message: `You are currently late filing a UT Request`,
-                                                position: 'top-center',
-                                                color: 'yellow',
-                                                autoClose: 5000,
-                                            })
-                                        }
-                                        const formattedDate = value.toLocaleDateString('en-CA');
-                                        handleChange("ut_date", formattedDate);
-                                    } else {
-                                        handleChange("ut_date", '');
+            <Container fluid className="mt-3">
+                <Modal opened={openedForm} onClose={closeForm} title={<strong>Create UT </strong>} closeOnClickOutside={false} centered>
+
+                    <form onSubmit={handleSubmit}>
+                        <DateInput
+                            label="Date"
+                            name="ut_date"
+                            value={values.ut_date}
+                            placeholder="Pick date"
+                            onChange={(value) => {
+                                if (value) {
+                                    const selectedDate = new Date(value);
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    if (selectedDate < today) {
+                                        notifications.show({
+                                            title: 'Warning',
+                                            message: `You are currently late filing a UT Request`,
+                                            position: 'top-center',
+                                            color: 'yellow',
+                                            autoClose: 5000,
+                                        })
                                     }
-                                }}
-                            />
-                            <TimeInput
-                                label="Time"
-                                name="ut_time"
-                                value={values.ut_time}
-                                ref={ref}
-                                rightSection={pickerControl}
-                                onChange={(event) => handleChange(event.target.name, event.target.value)}
-                                style={{ width: 125 }}
-                            />
-                            <Textarea
-                                label="Reason"
-                                name="ut_reason"
-                                placeholder=""
-                                autosize
-                                minRows={2}
-                                maxRows={4}
-                                value={values.ut_reason}
-                                onChange={(event) => handleChange(event.target.name, event.target.value)}
-                            />
-                            <Button className='mt-3' color='teal' type="submit">Submit</Button>
-                        </form>
-                    </Card.Body>
-                </Card>
+                                    const formattedDate = value.toLocaleDateString('en-CA');
+                                    handleChange("ut_date", formattedDate);
+                                } else {
+                                    handleChange("ut_date", '');
+                                }
+                            }}
+                        />
+                        <TimeInput
+                            label="Time"
+                            name="ut_time"
+                            value={values.ut_time}
+                            ref={ref}
+                            rightSection={pickerControl}
+                            onChange={(event) => handleChange(event.target.name, event.target.value)}
+                            style={{ width: 125 }}
+                        />
+                        <Textarea
+                            label="Reason"
+                            name="ut_reason"
+                            placeholder=""
+                            autosize
+                            minRows={2}
+                            maxRows={4}
+                            value={values.ut_reason}
+                            onChange={(event) => handleChange(event.target.name, event.target.value)}
+                        />
+                        <Button className='mt-3' color='teal' type="submit">Submit</Button>
+                    </form>
 
-                <Card className="mt-5">
-                    <Card.Body>
-                        <Card.Title>Undertime List</Card.Title>
-                        <Table striped>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Reference No.</Table.Th>
-                                    <Table.Th>Name</Table.Th>
-                                    <Table.Th>Date</Table.Th>
-                                    <Table.Th>Time</Table.Th>
-                                    <Table.Th>Reason</Table.Th>
-                                    <Table.Th>Status</Table.Th>
-                                    <Table.Th>Date File</Table.Th>
-                                    <Table.Th>Action</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {UTList && UTList.length > 0 ? (
-                                    paginatedData.map((ut) => {
+                </Modal>
 
-                                        return (
-                                            <Table.Tr key={ut.id}>
+                <Card withBorder className="mt-5">
+                    <Box className="">
+                        <Button onClick={() => openForm()} color='green'> Create UT</Button>
+                    </Box>
+                    <Tabs color="lime" radius="xs" defaultValue="Entry" value={tabValue} onChange={setTabValue}>
+                        <Tabs.List>
+                            <Tabs.Tab value="utentry">
+                                UT Entry
+                            </Tabs.Tab>
+                            <Tabs.Tab value="utspoiled">
+                                UT Spoiled
+                            </Tabs.Tab>
+                        </Tabs.List>
+                        <Tabs.Panel value="utentry">
 
-                                                <Table.Td>{ut.ut_no}</Table.Td>
-                                                <Table.Td>{ut.user?.name}</Table.Td>
-                                                <Table.Td>{ut.ut_date}</Table.Td>
-                                                <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
-                                                <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
-                                                <Table.Td>{ut.status?.mf_status_name}</Table.Td>
-                                                <Table.Td>{formatDate(ut.created_date)}</Table.Td>
-                                                <Table.Td>
-                                                    <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
-                                                    {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
-                                                        <Button onClick={() => handleEditClick(ut.id)} color="yellow" className="ms-2">Edit</Button>
+                            <Card>
+                                <Card.Section className="">Undertime List</Card.Section>
 
-                                                    )}
-                                                    {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
-                                                        <Button onClick={() => handleSpoil(ut.id)} color="red" className="ms-2">Delete</Button>
+                                <Table striped>
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th w={70}>Reference No.</Table.Th>
+                                            <Table.Th> Employee Name</Table.Th>
+                                            <Table.Th>UT Date</Table.Th>
+                                            <Table.Th>UT Time</Table.Th>
+                                            <Table.Th>Reason</Table.Th>
+                                            <Table.Th>Status</Table.Th>
+                                            <Table.Th>Date File</Table.Th>
+                                            <Table.Th>Action</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {UTList && UTList.length > 0 ? (
+                                            paginatedData.map((ut) => {
 
+                                                return (
+                                                    <Table.Tr key={ut.id}>
 
-                                                    )}
+                                                        <Table.Td>{ut.ut_no}</Table.Td>
+                                                        <Table.Td>{ut.user?.name}</Table.Td>
+                                                        <Table.Td>{ut.ut_date}</Table.Td>
+                                                        <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
+                                                        <Table.Td>{ut.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td>{formatDate(ut.created_date)}</Table.Td>
+                                                        <Table.Td>
+                                                            <ActionIcon onClick={() => handleViewClick(ut.id)} className="mt-2"><IconEye /></ActionIcon>
+                                                            {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
+                                                                <ActionIcon onClick={() => handleEditClick(ut.id)} color="lime" className="ms-2"><IconEdit /></ActionIcon>
 
-                                                </Table.Td>
-                                            </Table.Tr>
-                                        );
-                                    })
-                                ) : (
-                                    <p1> tite</p1>
-                                )}
-                            </Table.Tbody>
-                            {/* Pagination */}
-
-                            <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
-                        </Table>
-                        <Modal opened={opened} onClose={close} title="UT Request Details" centered>
-                            {selectedUT && (
-                                <>
-                                    <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
-                                    <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
-
-                                    <DateInput label="UT Date Requested" placeholder={selectedUT.ut_date || ''} disabled />
-
-                                    <TextInput label="UT Time Requested" placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
-                                    <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
-
-                                    <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
-
-                                    <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
-
-                                    <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
-                                </>
-                            )}
-                        </Modal>
-                        <Modal opened={editOpened} onClose={close2} title="Edit Request Details" centered>
-                            <form onSubmit={handleEditSubmit}>
+                                                            )}
+                                                            {!(ut.ut_status_id === 2 || ut.ut_status_id === 3 || ut.status?.mf_status_name === 'Approved' || ut.status?.mf_status_name === 'Disapproved') && (
+                                                                <ActionIcon onClick={() => handleSpoil(ut.id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
 
 
-                                {selectedUT && (
-                                    <>
-                                        <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
+                                                            )}
 
-                                        <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
+                                                        </Table.Td>
+                                                    </Table.Tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <p1> tite</p1>
+                                        )}
+                                        <Pagination w={200} total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+                                    </Table.Tbody>
+                                    {/* Pagination */}
 
-                                        <DateInput
-                                            label="Date"
-                                            name="ut_date"
-                                            value={values.ut_date}
-                                            placeholder={selectedUT.ut_date || ''}
-                                            onChange={(value) => {
-                                                if (value) {
-                                                    const formattedDate = value.toLocaleDateString('en-CA');
-                                                    handleChange("ut_date", formattedDate);
-                                                } else {
-                                                    handleChange("ut_date", '');
-                                                }
-                                            }}
-                                        />
 
-                                        <TimeInput
-                                            label="Time"
-                                            name="ut_time"
-                                            value={values.ut_time}
-                                            ref={ref}
-                                            rightSection={pickerControl}
-                                            onChange={(event) => handleChange(event.target.name, event.target.value)}
-                                            style={{ width: 125 }}
-                                        />
-                                        <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
-                                        <Button type="submit" className="mt-3" color="teal">Submit</Button>
-                                    </>
-                                )}
-                            </form>
-                        </Modal>
+                                </Table>
+                                <Modal opened={opened} onClose={close} title="UT Request Details" centered>
+                                    {selectedUT && (
+                                        <>
+                                            <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
+                                            <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
 
-                    </Card.Body>
+                                            <DateInput label="UT Date Requested" placeholder={selectedUT.ut_date || ''} disabled />
+
+                                            <TextInput label="UT Time Requested" placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
+                                            <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
+
+                                            <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
+
+                                            <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
+
+                                            <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
+                                        </>
+                                    )}
+                                </Modal>
+                                <Modal opened={editOpened} onClose={close2} title="Edit Request Details" centered>
+                                    <form onSubmit={handleEditSubmit}>
+
+
+                                        {selectedUT && (
+                                            <>
+                                                <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
+
+                                                <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
+
+                                                <DateInput
+                                                    label="Date"
+                                                    name="ut_date"
+                                                    value={values.ut_date}
+                                                    placeholder={selectedUT.ut_date || ''}
+                                                    onChange={(value) => {
+                                                        if (value) {
+                                                            const formattedDate = value.toLocaleDateString('en-CA');
+                                                            handleChange("ut_date", formattedDate);
+                                                        } else {
+                                                            handleChange("ut_date", '');
+                                                        }
+                                                    }}
+                                                />
+
+                                                <TimeInput
+                                                    label="Time"
+                                                    name="ut_time"
+                                                    value={values.ut_time}
+                                                    ref={ref}
+                                                    rightSection={pickerControl}
+                                                    onChange={(event) => handleChange(event.target.name, event.target.value)}
+                                                    style={{ width: 125 }}
+                                                />
+                                                <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
+                                                <Button type="submit" className="mt-3" color="teal">Submit</Button>
+                                            </>
+                                        )}
+                                    </form>
+                                </Modal>
+
+                            </Card>
+                        </Tabs.Panel>
+                        <Tabs.Panel value="utspoiled">
+                            <Card>
+                                <Card.Section>Undertime List</Card.Section>
+                                <Table striped>
+                                    <Table.Thead>
+                                    <Table.Tr>
+                                            <Table.Th w={70}>Reference No.</Table.Th>
+                                            <Table.Th>Employee Name</Table.Th>
+                                            <Table.Th>UT Date</Table.Th>
+                                            <Table.Th>UT Time</Table.Th>
+                                            <Table.Th>Reason</Table.Th>
+                                            <Table.Th>Status</Table.Th>
+                                            <Table.Th>Date File</Table.Th>
+                                            <Table.Th>Action</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {spoiledUTList && spoiledUTList.length > 0 ? (
+                                            paginatedData2.map((ut2) => {
+
+                                                return (
+                                                    <Table.Tr key={ut2.id}>
+
+                                                        <Table.Td>{ut2.ut_no}</Table.Td>
+                                                        <Table.Td>{ut2.user?.name}</Table.Td>
+                                                        <Table.Td>{ut2.ut_date}</Table.Td>
+                                                        <Table.Td>{formatTime(ut2.ut_time)}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut2.ut_reason}</Table.Td>
+                                                        <Table.Td>{ut2.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td>{formatDate(ut2.created_date)}</Table.Td>
+                                                        <Table.Td>
+                                                            <ActionIcon onClick={() => handleViewClick(ut2.id)} ><IconEye /></ActionIcon>
+                                                            <ActionIcon onClick={() => handleDelete(ut2.id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
+                                                        </Table.Td>
+                                                    </Table.Tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <p1> tite</p1>
+                                        )}
+                                    <Pagination w={200}  total={totalPages2} value={activePage2} onChange={setActivePage2} color="red.4" mt="sm" />
+
+                                    </Table.Tbody>
+                                    {/* Pagination */}
+
+                                </Table>
+                                <Modal opened={opened} onClose={close} title="UT Request Details" centered>
+                                    {selectedUT && (
+                                        <>
+                                            <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
+                                            <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
+
+                                            <DateInput label="UT Date Requested" placeholder={selectedUT.ut_date || ''} disabled />
+
+                                            <TextInput label="UT Time Requested" placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
+                                            <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
+
+                                            <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
+
+                                            <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
+
+                                            <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
+                                        </>
+                                    )}
+                                </Modal>
+                            </Card>
+                        </Tabs.Panel>
+                    </Tabs>
+
                 </Card>
             </Container>
         </AppLayout>

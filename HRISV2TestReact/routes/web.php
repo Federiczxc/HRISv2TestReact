@@ -41,6 +41,7 @@ Route::get('/OB_Module/ob_entry/', [OBController::class, 'index'])->middleware('
 Route::post('/OB_Module/ob_entry/', [OBController::class, 'OBEntry']);
 Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']);
 /* Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']); */
+Route::post('/OB_Module/ob_entry/{id}', [OBController::class, 'spoilOBRequest']);
 Route::delete('/OB_Module/ob_entry/{id}', [OBController::class, 'deleteOBRequest'])->name('delete.ob');
 Route::get('/OB_Module/ob_appr_list', [OBController::class, 'OBApprList'])->middleware('auth')->name('obapprlist.show');
 Route::post('/OB_Module/ob_appr_list', [OBController::class, 'updateAll'])->name('obupdate.all');

@@ -3,14 +3,14 @@ import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
 
 import { useForm, router } from '@inertiajs/react'
-import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Input, Select, Pagination, TextInput, SimpleGrid, FileInput } from '@mantine/core';
+import {  Form } from 'react-bootstrap';
+import { ActionIcon, Card, Container, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput, FileInput } from '@mantine/core';
 import { DateInput, DatePickerInput, TimeInput } from '@mantine/dates';
 import { IconClock, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Dropzone } from '@mantine/dropzone';
 
-export default function ob_entry({ OBList, viewOBRequest }) {
+export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
     const [values, setValues] = useState({
         destination: '',
         date_from: '',
@@ -30,6 +30,13 @@ export default function ob_entry({ OBList, viewOBRequest }) {
         activePage * itemsPerPage
     );
 
+    const [activePage2, setActivePage2] = useState(1);
+    const itemsPerPage2 = 5;
+    const totalPages2 = Math.ceil(spoiledOBList.length / itemsPerPage2);
+    const paginatedData2 = spoiledOBList.slice(
+        (activePage2 - 1) * itemsPerPage2,
+        activePage2 * itemsPerPage2
+    );
     const [selectedOB, setSelectedOB] = useState(viewOBRequest);
     const handleFileChange = (acceptedFiles) => {
 
@@ -88,7 +95,37 @@ export default function ob_entry({ OBList, viewOBRequest }) {
 
         });
     }
+    function handleSpoil(obId) {
+        const updatedValue = {
+            ob_status_id: 4
+        }
+        router.post(`/OB_Module/ob_entry/${obId}`, updatedValue, {
+            OnError: (errors) => {
+                notifications.show({
+                    title: 'Error',
+                    message: `Failed to delete the entry: ${errors} `,
+                    color: 'red',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+                console.error('Submission Error', errors);
+            },
 
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: 'Delete Success! You may check it in Spoiled Tab',
+                    color: 'green',
+                    position: 'top-center',
+                    autoClose: 5000,
+                });
+
+
+            },
+
+
+        });
+    }
     function handleDelete(obId) {
         console.log("del", obId);
         router.delete(`/OB_Module/ob_entry/${obId}`, {
@@ -216,8 +253,8 @@ export default function ob_entry({ OBList, viewOBRequest }) {
     const close2 = () => setEditOpened(false);
     return (
         <AppLayout>
-            <Container className="mt-3">
-                <Card>
+            <Container fluid className="mt-3">
+                <Card withBorder w={1300}>
                     <Tabs color="lime" radius="xs" defaultValue="Entry" value={tabValue} onChange={setTabValue}>
                         <Tabs.List>
                             <Tabs.Tab value="obentry">
@@ -226,11 +263,14 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                             <Tabs.Tab value="ob_entry_list">
                                 OB Entry List
                             </Tabs.Tab>
+                            <Tabs.Tab value="obspoiled">
+                                OB Spoiled
+                            </Tabs.Tab>
                         </Tabs.List>
                         <Tabs.Panel value="obentry">
 
-                            <Card.Body>
-                                <Card.Title className="mt-3" style={{ color: "gray" }}> Official Business Entry</Card.Title>
+                            <Card>
+                                <Card.Section className="mt-3" style={{ color: "gray" }}> Official Business Entry</Card.Section>
                                 <form onSubmit={handleSubmit}>
                                     <Box style={{ display: "flex", flexiwrap: "wrap" }}>
                                         <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
@@ -408,20 +448,22 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                     </Box>
                                 </form>
 
-                            </Card.Body>
+                            </Card>
                         </Tabs.Panel>
                         <Tabs.Panel value="ob_entry_list">
-                            <Card.Body>
-                                <Card.Title className="mt-3" style={{ color: "gray" }}>
+                            <Card>
+                                <Card.Section className="mt-3" style={{ color: "gray" }}>
                                     OB Entry List
-                                </Card.Title>
+                                </Card.Section>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
                                             <Table.Th> Reference No.</Table.Th>
-                                            <Table.Th> Name</Table.Th>
-                                            <Table.Th> Date Range</Table.Th>
-                                            <Table.Th> Time Range</Table.Th>
+                                            <Table.Th> EmployeeName</Table.Th>
+                                            <Table.Th> Date From</Table.Th>
+                                            <Table.Th> Date To</Table.Th>
+                                            <Table.Th> Time From</Table.Th>
+                                            <Table.Th> Time To</Table.Th>
                                             <Table.Th> Destination</Table.Th>
                                             <Table.Th> To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
@@ -437,8 +479,10 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                     <Table.Tr key={ob.ob_id}>
                                                         <Table.Td> {ob.ob_no}</Table.Td>
                                                         <Table.Td> {ob.user?.name}</Table.Td>
-                                                        <Table.Td> {ob.date_from} to {ob.date_to}</Table.Td>
-                                                        <Table.Td> {formatTime(ob.time_from)} & {formatTime(ob.time_to)}</Table.Td>
+                                                        <Table.Td> {ob.date_from}</Table.Td>
+                                                        <Table.Td> {ob.date_to}</Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_from)} </Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_to)} </Table.Td>
                                                         <Table.Td> {ob.destination}</Table.Td>
                                                         <Table.Td> {ob.person_to_meet}</Table.Td>
 
@@ -450,7 +494,7 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                                                 <Button onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-2">Edit</Button>
                                                             )}
                                                             {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
-                                                                <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2">Delete</Button>
+                                                                <Button onClick={() => handleSpoil(ob.ob_id)} color="red" className="ms-2">Delete</Button>
 
                                                             )}
                                                         </Table.Td>
@@ -690,9 +734,64 @@ export default function ob_entry({ OBList, viewOBRequest }) {
                                     </form>
                                 </Modal>
 
-                            </Card.Body>
+                            </Card>
                         </Tabs.Panel>
+                        <Tabs.Panel value="obspoiled">
+                            <Card>
+                                <Card.Section className="mt-3" style={{ color: "gray" }}>
+                                    OB Spoiled
+                                </Card.Section>
+                                <Table striped highlightOnHover>
+                                    <Table.Thead>
+                                        <Table.Tr>
+                                            <Table.Th> Reference No.</Table.Th>
+                                            <Table.Th> Name</Table.Th>
+                                            <Table.Th> Date Range</Table.Th>
+                                            <Table.Th> Time Range</Table.Th>
+                                            <Table.Th> Destination</Table.Th>
+                                            <Table.Th> To Meet</Table.Th>
+                                            <Table.Th> Purpose</Table.Th>
+                                            <Table.Th> Status</Table.Th>
+                                            <Table.Th> Date File</Table.Th>
+                                            <Table.Th> Action</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {spoiledOBList && spoiledOBList.length > 0 ? (
+                                            paginatedData2.map((ob) => {
+                                                return (
+                                                    <Table.Tr key={ob.ob_id}>
+                                                        <Table.Td> {ob.ob_no}</Table.Td>
+                                                        <Table.Td> {ob.user?.name}</Table.Td>
+                                                        <Table.Td> {ob.date_from} to {ob.date_to}</Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_from)} & {formatTime(ob.time_to)}</Table.Td>
+                                                        <Table.Td> {ob.destination}</Table.Td>
+                                                        <Table.Td> {ob.person_to_meet}</Table.Td>
 
+                                                        <Table.Td> {ob.ob_purpose}</Table.Td>
+                                                        <Table.Td> {ob.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td> {formatDate(ob.created_date)}</Table.Td>
+                                                        <Table.Td>   
+                                                            {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
+                                                                <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2">Delete</Button>
+
+                                                            )}
+                                                        </Table.Td>
+                                                    </Table.Tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <p1> Tite </p1>
+                                        )}
+
+                                    </Table.Tbody>
+                                    <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+                                </Table>
+
+
+
+                            </Card>
+                        </Tabs.Panel>
 
                     </Tabs>
                 </Card>
