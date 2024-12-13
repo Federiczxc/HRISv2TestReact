@@ -1,24 +1,41 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { Container, Card, Form } from 'react-bootstrap';
-import { ActionIcon, rem, Textarea, Modal, Button, Text, Select, Tabs, Table, Pagination, Input } from '@mantine/core';
-import { DateInput, TimeInput } from '@mantine/dates';
-
+import {
+    ActionIcon,
+    rem,
+    Textarea,
+    Modal,
+    Button,
+    Text,
+    Select,
+    Tabs,
+    Table,
+    Pagination,
+    Input,
+    Divider,
+    Flex,
+    Stack,
+    Title
+} from '@mantine/core';
+import { DateInput } from '@mantine/dates';
+import {
+    flexRender,
+    MRT_GlobalFilterTextInput,
+    MRT_TablePagination,
+    MRT_ToolbarAlertBanner,
+    useMantineReactTable,
+    MRT_TableBodyCellValue,
+    MantineReactTable,
+} from 'mantine-react-table'
 import { IconClock } from '@tabler/icons-react';
 import { router } from '@inertiajs/react'
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
+import dayjs from 'dayjs';
 
-export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendingRequest }) {
-
-    /* UT Pending List Declaration */
-    /*     const { data: pendingData,
-            current_page: pendingPage,
-            last_page: pendingLastPage,
-            next_page_url: pendingNextPageUrl,
-            prev_page_url: pendingPrevPageUrl } = UTPendingList; */
-
-
+export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, viewUTPendingRequest }) {
+    const pendingData = UTPendingList;
     const [requestData, setRequestData] = useState(UTPendingList);
     const [activePendingPage, setActivePendingPage] = useState(1);
     const itemsPerPendingPage = 5;
@@ -28,6 +45,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
         activePendingPage * itemsPerPendingPage
     );
 
+    console.log("tite", pendingData);
 
     useEffect(() => {
         setRequestData(UTPendingList);
@@ -49,17 +67,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
     const [opened2, setOpened2] = useState(false);
     const open2 = () => setOpened2(true);
     const close2 = () => setOpened2(false)
-    /* UT Updated List Declaration */
-    /*  const { data: updatedData,
-         current_page: updatedPage,
-         last_page: updatedLastPage,
-         next_page_url: updatedNextPageUrl,
-         prev_page_url: updatedPrevPageUrl } = UTUpdatedList; */
-    /*     const [requestData2, setRequestData2] = useState(updatedData || []);
-        useEffect(() => {
-            setRequestData2(updatedData);
-        }, [UTUpdatedList]);
-     */
+
     const [activeUpdatedPage, setActiveUpdatedPage] = useState(1);
     const itemsPerUpdatedPage = 5;
     const totalUpdatedPages = Math.ceil(UTUpdatedList.length / itemsPerUpdatedPage);
@@ -73,15 +81,121 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
     const [editMode, setEditMode] = useState({});
 
 
+    const pendingColumns = [
+        {
+            accessorKey: 'ut_no',
+            header: 'Reference No.',
+            enableResizing: false,
 
+        },
+        {
+            accessorKey: 'user.name',
+            header: 'Name',
+        },
+        {
+            accessorKey: 'status.mf_status_name',
+            header: 'Status',
+            enableResizing: false,
+
+        },
+        {
+            accessorKey: 'ut_date',
+            header: 'Date',
+            enableResizing: false,
+
+        },
+        {
+            accessorKey: 'ut_time',
+            header: 'Time',
+            enableResizing: false,
+
+            Cell: ({ cell }) => {
+                const timeValue = cell.getValue();
+                const formattedTime = formatTime(timeValue.split('.')[0]);
+                return <span>{formattedTime}</span>;
+            },
+        },
+        {
+            accessorKey: 'ut_reason',
+            header: 'Reason',
+            Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
+        },
+
+        {
+            accessorKey: 'created_date',
+            header: 'Date Filed',
+            Cell: ({ cell }) => <span>{dayjs(cell.getValue()).format('YYYY-MM-DD')}</span>,
+
+        },
+
+    ];
+
+    const pendingTable = useMantineReactTable({
+        columns: pendingColumns,
+        data: requestData,
+        layoutMode: "grid-no-grow",
+        enableRowSelection: (row) => row.original.mf_status_id = 1,
+        enableColumnResizing: true,
+        initialState: {
+            density: 'xs',
+            pagination: { pageSize: 5, pageIndex: 0 },
+            showGlobalFilter: true,
+        },
+        mantinePaginationProps: {
+            rowsPerPageOptions: ['5', '10', '15'],
+        },
+        paginationDisplayMode: 'pages',
+    });
+    const handleUpdateStatus = (statusId) => {
+        const selectedRows = pendingTable.getSelectedRowModel().rows;
+
+        if (selectedRows.length === 0) {
+            notifications.show({
+                title: 'No Selection',
+                message: 'Please select at least one row to update.',
+                position: 'top-center',
+                color: 'yellow',
+                autoClose: 2000,
+            });
+            return;
+        }
+
+        const updatedRows = selectedRows.map((row) => ({
+            ...row.original,
+            ut_status_id: statusId,
+        }));
+
+        console.log("Updated Rows:", updatedRows);
+
+        router.post('ut_appr_list/batch', { rows: updatedRows }, {
+            onSuccess: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: `UT Request Update Success`,
+                    position: 'top-center',
+                    color: 'green ',
+                    autoClose: 2000,
+                })
+                pendingTable.resetRowSelection();
+            },
+            onError: () => {
+                notifications.show({
+                    title: 'Success',
+                    message: `Unable to make any changes. Please try again`,
+                    position: 'top-center',
+                    color: 'green ',
+                    autoClose: 2000,
+                })
+
+
+            },
+        });
+    };
+    const selectedRowCount = pendingTable.getSelectedRowModel().rows.length;
     const handleSaveRow = async (requestID) => {    /* EDIT SAVE */
         const requestToUpdate = requestData.find((utRequest) => utRequest.id === requestID);
 
-        /*    const statusMapping = {
-               2: "Approved",
-               3: "Rejected",
-           };
-    */
+
         if (!requestToUpdate.ut_status_id || requestToUpdate.ut_status_id === '1') {
             notifications.show({
                 title: 'Error',
@@ -94,7 +208,6 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
         }
         const updatedFields = {
             ut_status_id: requestToUpdate.ut_status_id,
-            /* mf_status_name: statusMapping[requestToUpdate.ut_status_id] || "Pending" */
         };
         try {
             router.post(`/UT_Module/ut_appr_list/edit/${requestID}`, updatedFields, {
@@ -144,18 +257,18 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
     };
     function handleEditSubmit(e) {
         e.preventDefault();
-    
+
         if (!selectedPendingUT.ut_status_id) {
             console.error('UT Status is required.');
             return;
         }
-    
+
         const updatedFields = {
-            ut_no: selectedPendingUT.ut_no,      
+            ut_no: selectedPendingUT.ut_no,
             ut_status_id: selectedPendingUT.ut_status_id,
-            remarks: selectedPendingUT.remarks,  
+            remarks: selectedPendingUT.remarks,
         };
-    
+
         router.post('/UT_Module/ut_appr_list/edit', updatedFields, {
             onSuccess: () => {
                 notifications.show({
@@ -176,11 +289,11 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                 })
             }
         });
-    
+
         // Close the modal after submission
         close();
     }
-    
+
     /* FORMAAAAAAAAAAAAAAAAAAAAT */
     const formatTime = (time) => {
         const timeParts = time.split(':');
@@ -286,14 +399,17 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                             <Tabs.Tab value="updated">
                                 Updated
                             </Tabs.Tab>
+                            <Tabs.Tab value="newPending">
+                                newPending
+                            </Tabs.Tab>
                         </Tabs.List>
                         {/* PENDING TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB */}
                         <Tabs.Panel value="pending">
                             <Card.Body>
                                 <Card.Title>Undertime Pending List</Card.Title>
-                                
-                                    <Button onClick={() => openModal()} color='green'> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
+
+                                <Button onClick={() => openModal()} color='green'> Approve all</Button>
+                                <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
@@ -387,7 +503,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                                     {/* Pagination */}
                                     <Pagination total={totalPendingPages} value={activePendingPage} onChange={setActivePendingPage} color="lime.4" mt="sm" />
                                 </Table>
-                                <Modal opened={opened} onClose={close} title="UT Request Details" centered>
+                                <Modal opened={opened} onClose={close} title="UT Edit Request Details" centered> {/* View */}
                                     <form onSubmit={handleEditSubmit}>
 
                                         {selectedPendingUT && (
@@ -442,7 +558,77 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                         </Tabs.Panel>
 
 
+                        <Tabs.Panel value="newPending">
+                            <Stack>
+                                <Divider />
+                                <Title className="ms-3" order={4}>
+                                    Pending Table
 
+                                </Title>
+                                <Flex className="ms-3">
+                                    <Button onClick={() => openModal()} color='green'> Approve all</Button>
+                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
+                                    {selectedRowCount > 0 && (
+                                        <>
+
+                                            <Button onClick={() => handleUpdateStatus(2)} ms={10} color='green'> Approve Selected</Button>
+                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10}> Reject Selected</Button>
+                                        </>
+                                    )}
+                                </Flex>
+                                <Flex justify="space-between" align="center">
+                                    <MRT_GlobalFilterTextInput table={pendingTable} />
+                                    <MRT_TablePagination table={pendingTable} />
+                                </Flex>
+                                <Table >
+                                    <Table.Thead>
+                                        {pendingTable.getHeaderGroups().map((headerGroup) => (
+                                            <Table.Tr key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => (
+                                                    <Table.Th key={header.id}>
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : flexRender(
+                                                                header.column.columnDef.Header ??
+                                                                header.column.columnDef.header,
+                                                                header.getContext(),
+                                                            )}
+                                                    </Table.Th>
+                                                ))}
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {pendingTable.getRowModel().rows.map((row) => (
+                                            <Table.Tr key={row.original.id}>
+                                                {row.getVisibleCells().map((cell) => {
+                                                    const isHighlighted = row.original.sec_apprv_no === apprvID;
+                                                    console.log("pepe", row.original);  
+                                                    return (
+                                                        <Table.Td key={cell.id} style={{
+                                                            color: isHighlighted ? 'lime' : 'inherit', // Highlight color
+                                                            fontWeight: isHighlighted ? 'bold' : 'normal', // Optional bold
+                                                        }}>
+                                                            <MRT_TableBodyCellValue cell={cell} table={pendingTable} />
+                                                        </Table.Td>
+                                                    );
+                                                }
+
+                                                )}
+
+                                                <Table.Td>
+
+                                                    <Button onClick={() => handleViewClick(row.original.id)} className="btn btn-primary btn-sm"> View</Button>
+
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Tbody>
+                                </Table>
+                                <MRT_ToolbarAlertBanner stackAlertBanner table={pendingTable} />
+                            </Stack>
+
+                        </Tabs.Panel>
 
 
 
@@ -539,6 +725,6 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, viewUTPendi
                     </Tabs>
                 </Card>
             </Container>
-        </AppLayout>
+        </AppLayout >
     )
 }

@@ -57,6 +57,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                closeForm();
             },
         });
     }
@@ -239,7 +240,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                             name="ut_time"
                             value={values.ut_time}
                             ref={ref}
-                            rightSection={pickerControl}
+                            rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5}/>}
                             onChange={(event) => handleChange(event.target.name, event.target.value)}
                             style={{ width: 125 }}
                         />
@@ -377,7 +378,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                                     name="ut_time"
                                                     value={values.ut_time}
                                                     ref={ref}
-                                                    rightSection={pickerControl}
+                                                    rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5}/>}
                                                     onChange={(event) => handleChange(event.target.name, event.target.value)}
                                                     style={{ width: 125 }}
                                                 />

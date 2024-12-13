@@ -32,7 +32,7 @@ class UTController extends Controller
             ->get();
         return Inertia::render('UT_Module/ut_entry', [
             'UTList' => $utList,
-           'spoiledUTList' => $spoiledUTList,
+            'spoiledUTList' => $spoiledUTList,
         ]);
     }
 
@@ -162,6 +162,7 @@ class UTController extends Controller
         return Inertia::render('UT_Module/ut_appr_list', [
             'UTPendingList' => $appr_pendings,
             'UTUpdatedList' => $appr_updated,
+            'apprvID' => $apprvID
         ]);
     }
 
@@ -189,6 +190,29 @@ class UTController extends Controller
             ]);
         }
         return redirect()->intended('/UT_Module/ut_appr_list');
+    }
+    public function updateBatch(Request $request)
+    {
+        $validated = $request->validate([
+            'rows.*.id' => 'required',
+            'rows.*.ut_status_id' => 'required|in:2,3',
+        ]);
+        
+        $currentUser = Auth::user()->emp_no;
+        foreach ($validated['rows'] as $row) {
+            $ut = UTModel::find($row['id']);
+            if ($ut) {
+                $ut->update([
+                    'ut_status_id' => $row['ut_status_id'],
+                    'approved_by' => $currentUser,
+                    'approved_date' => Carbon::now(),
+                    'updated_by' => Auth::user()->emp_no,
+                    'updated_date' => Carbon::now(),
+                ]);
+            }
+        }
+        return redirect()->intended('/UT_Module/ut_appr_list');
+
     }
 
     public function updateUTRequest(Request $request, $id) //Quickedit
