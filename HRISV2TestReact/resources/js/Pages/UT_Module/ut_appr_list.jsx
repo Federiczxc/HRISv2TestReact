@@ -12,11 +12,12 @@ import {
     Tabs,
     Table,
     Pagination,
-    Input,
+    TextInput,
     Divider,
     Flex,
     Stack,
-    Title
+    Title,
+    Box,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import {
@@ -28,7 +29,7 @@ import {
     MRT_TableBodyCellValue,
     MantineReactTable,
 } from 'mantine-react-table'
-import { IconClock } from '@tabler/icons-react';
+import { IconClock, IconEdit, IconEye } from '@tabler/icons-react';
 import { router } from '@inertiajs/react'
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
@@ -37,6 +38,8 @@ import dayjs from 'dayjs';
 export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, viewUTPendingRequest }) {
     const pendingData = UTPendingList;
     const [requestData, setRequestData] = useState(UTPendingList);
+    const updatedData = UTUpdatedList;
+    const [requestData2, setRequestData2] = useState(UTUpdatedList);
     const [activePendingPage, setActivePendingPage] = useState(1);
     const itemsPerPendingPage = 5;
     const totalPendingPages = Math.ceil(UTPendingList.length / itemsPerPendingPage);
@@ -46,10 +49,16 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
     );
 
     console.log("tite", pendingData);
+    console.log("puke", requestData2);
 
     useEffect(() => {
         setRequestData(UTPendingList);
     }, [UTPendingList]);
+
+    useEffect(() => {
+        setRequestData2(UTUpdatedList);
+    }, [UTUpdatedList]);
+
     const [selectedPendingUT, setSelectedPendingUT] = useState(viewUTPendingRequest);
     const handleViewClick = (utId) => {
         const utData = UTPendingList.find((ut) => ut.id === utId);
@@ -61,12 +70,20 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         setSelectedPendingUT(utData);
         open2();
     }
+    const handleViewClick3 = (utId) => {
+        const utData = UTUpdatedList.find((ut) => ut.id === utId);
+        setSelectedPendingUT(utData);
+        open3();
+    }
     const [opened, setOpened] = useState(false);
     const open = () => setOpened(true);
     const close = () => setOpened(false)
     const [opened2, setOpened2] = useState(false);
     const open2 = () => setOpened2(true);
     const close2 = () => setOpened2(false)
+    const [opened3, setOpened3] = useState(false);
+    const open3 = () => setOpened3(true);
+    const close3 = () => setOpened3(false)
 
     const [activeUpdatedPage, setActiveUpdatedPage] = useState(1);
     const itemsPerUpdatedPage = 5;
@@ -90,23 +107,17 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         },
         {
             accessorKey: 'user.name',
-            header: 'Name',
-        },
-        {
-            accessorKey: 'status.mf_status_name',
-            header: 'Status',
-            enableResizing: false,
-
+            header: 'Employee Name',
         },
         {
             accessorKey: 'ut_date',
-            header: 'Date',
+            header: 'UT Date',
             enableResizing: false,
 
         },
         {
             accessorKey: 'ut_time',
-            header: 'Time',
+            header: 'UT Time',
             enableResizing: false,
 
             Cell: ({ cell }) => {
@@ -117,7 +128,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         },
         {
             accessorKey: 'ut_reason',
-            header: 'Reason',
+            header: 'UT Reason',
             Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
         },
 
@@ -144,10 +155,83 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         mantinePaginationProps: {
             rowsPerPageOptions: ['5', '10', '15'],
         },
+
+
+        paginationDisplayMode: 'pages',
+    });
+
+    const updatedColumns = [
+        {
+            accessorKey: 'ut_no',
+            header: 'Reference No.',
+            enableResizing: false,
+
+        },
+        {
+            accessorKey: 'user.name',
+            header: 'Employee Name',
+        },
+        {
+            accessorKey: 'status.mf_status_name',
+            header: 'Status',
+            enableResizing: false,
+
+        },
+        {
+            accessorKey: 'ut_date',
+            header: 'UT Date',
+            enableResizing: false,
+
+        },
+        {
+            accessorKey: 'ut_time',
+            header: 'UT Time',
+            enableResizing: false,
+
+            Cell: ({ cell }) => {
+                const timeValue = cell.getValue();
+                const formattedTime = formatTime(timeValue.split('.')[0]);
+                return <span>{formattedTime}</span>;
+            },
+        },
+        {
+            accessorKey: 'ut_reason',
+            header: 'UT Reason',
+            Cell: ({ cell }) => <span style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{cell.getValue()}</span>
+        },
+
+        {
+            accessorKey: 'approved_date',
+            header: 'Approved Date',
+            Cell: ({ cell }) => <span>{dayjs(cell.getValue()).format('YYYY-MM-DD')}</span>,
+
+        },
+        {
+            accessorKey: 'approver_name',
+            header: 'Approved by',
+        },
+
+    ];
+    const updatedTable = useMantineReactTable({
+        columns: updatedColumns,
+        data: requestData2,
+        layoutMode: "grid-no-grow",
+        enableRowSelection: (row) => row.original.mf_status_id = 1,
+        enableColumnResizing: true,
+        initialState: {
+            density: 'xs',
+            pagination: { pageSize: 5, pageIndex: 0 },
+            showGlobalFilter: true,
+        },
+        mantinePaginationProps: {
+            rowsPerPageOptions: ['5', '10', '15'],
+        },
         paginationDisplayMode: 'pages',
     });
     const handleUpdateStatus = (statusId) => {
-        const selectedRows = pendingTable.getSelectedRowModel().rows;
+        const selectedRows = tabValue === "pending"
+            ? pendingTable.getSelectedRowModel().rows
+            : updatedTable.getSelectedRowModel().rows;
 
         if (selectedRows.length === 0) {
             notifications.show({
@@ -159,6 +243,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
             });
             return;
         }
+
 
         const updatedRows = selectedRows.map((row) => ({
             ...row.original,
@@ -176,7 +261,11 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                     color: 'green ',
                     autoClose: 2000,
                 })
-                pendingTable.resetRowSelection();
+                if (tabValue === "pending") {
+                    pendingTable.resetRowSelection();
+                } else if (tabValue === "updated") {
+                    updatedTable.resetRowSelection();
+                }
             },
             onError: () => {
                 notifications.show({
@@ -192,6 +281,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         });
     };
     const selectedRowCount = pendingTable.getSelectedRowModel().rows.length;
+    const selectedRowCount2 = updatedTable.getSelectedRowModel().rows.length;
     const handleSaveRow = async (requestID) => {    /* EDIT SAVE */
         const requestToUpdate = requestData.find((utRequest) => utRequest.id === requestID);
 
@@ -292,6 +382,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
 
         // Close the modal after submission
         close();
+        close3();
     }
 
     /* FORMAAAAAAAAAAAAAAAAAAAAT */
@@ -399,166 +490,12 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                             <Tabs.Tab value="updated">
                                 Updated
                             </Tabs.Tab>
-                            <Tabs.Tab value="newPending">
-                                newPending
-                            </Tabs.Tab>
                         </Tabs.List>
                         {/* PENDING TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB */}
+
+
+
                         <Tabs.Panel value="pending">
-                            <Card.Body>
-                                <Card.Title>Undertime Pending List</Card.Title>
-
-                                <Button onClick={() => openModal()} color='green'> Approve all</Button>
-                                <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
-                                <Table striped highlightOnHover>
-                                    <Table.Thead>
-                                        <Table.Tr>
-                                            <Table.Th>UT No</Table.Th>
-                                            <Table.Th>Name</Table.Th>
-                                            <Table.Th>Date</Table.Th>
-                                            <Table.Th>Time</Table.Th>
-                                            <Table.Th>Reason</Table.Th>
-                                            <Table.Th>Status</Table.Th>
-                                            <Table.Th>Date File</Table.Th>
-                                            <Table.Th>Action</Table.Th>
-                                        </Table.Tr>
-                                    </Table.Thead>
-                                    <Table.Tbody>
-                                        {UTPendingList && UTPendingList.length > 0 ?
-                                            (
-                                                paginatedPending.map((ut) => {
-
-                                                    return (
-                                                        <Table.Tr key={ut.id}>
-                                                            <Table.Td>{ut.ut_no}</Table.Td>
-                                                            <Table.Td>{ut.user?.name}</Table.Td>
-                                                            <Table.Td>{ut.ut_date}</Table.Td>
-                                                            <Table.Td>{formatTime(ut.ut_time)}</Table.Td>
-                                                            <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut.ut_reason}</Table.Td>
-                                                            <Table.Td>
-                                                                {editMode[ut.id] ? (
-                                                                    <Form.Select
-                                                                        value={requestData.find((utRequest) => utRequest.id === ut.id)?.ut_status_id || ''}
-                                                                        onChange={(e) => handleFieldChange(ut.id, 'ut_status_id', e.target.value)}
-                                                                    >
-                                                                        <option value=""> Please select</option>
-                                                                        <option value="2">Approved</option>
-                                                                        <option value="3">Disapproved</option>
-                                                                    </Form.Select>
-                                                                ) : (
-                                                                    ut.status?.mf_status_name
-                                                                )}
-                                                            </Table.Td>
-                                                            <Table.Td>{formatDate(ut.created_date)}</Table.Td>
-                                                            <Table.Td>
-                                                                {editMode[ut.id] ?
-                                                                    (
-                                                                        <>
-                                                                            <Button
-                                                                                className="btn btn-success btn-sm" color='green'
-                                                                                onClick={() => handleSaveRow(ut.id)}
-                                                                            >
-                                                                                Save
-                                                                            </Button>
-                                                                            <Button
-                                                                                className="btn btn-secondary btn-sm" color='gray'
-                                                                                onClick={() =>
-                                                                                    setEditMode((prev) => ({
-                                                                                        ...prev,
-                                                                                        [ut.id]: false,
-                                                                                    }))
-                                                                                }
-                                                                                style={{ marginLeft: "10px" }}
-                                                                            >
-                                                                                Cancel
-                                                                            </Button>
-                                                                        </>
-                                                                    ) :
-                                                                    (
-                                                                        <>
-                                                                            <Button
-                                                                                className="btn btn-warning btn-sm" color='yellow'
-                                                                                onClick={() =>
-                                                                                    setEditMode((prev) => ({
-                                                                                        ...prev,
-                                                                                        [ut.id]: true,
-                                                                                    }))
-                                                                                }
-                                                                            >
-                                                                                Edit
-                                                                            </Button>
-                                                                            <Button onClick={() => handleViewClick(ut.id)} className="btn btn-primary btn-sm">View</Button>
-                                                                        </>
-                                                                    )
-                                                                }
-                                                            </Table.Td>
-                                                        </Table.Tr>
-                                                    );
-
-                                                })
-                                            ) : (
-                                                <p1> Empty data</p1>
-                                            )}
-                                    </Table.Tbody>
-                                    {/* Pagination */}
-                                    <Pagination total={totalPendingPages} value={activePendingPage} onChange={setActivePendingPage} color="lime.4" mt="sm" />
-                                </Table>
-                                <Modal opened={opened} onClose={close} title="UT Edit Request Details" centered> {/* View */}
-                                    <form onSubmit={handleEditSubmit}>
-
-                                        {selectedPendingUT && (
-                                            <>
-                                                <label>Reference No.</label>
-                                                <Input value={selectedPendingUT.ut_no || ''} disabled />
-
-                                                <label>UT Status</label>
-                                                <Form.Select
-                                                    value={selectedPendingUT.ut_status_id || ''}
-                                                    onChange={(e) =>
-                                                        setSelectedPendingUT({
-                                                            ...selectedPendingUT,
-                                                            ut_status_id: e.target.value || '',
-
-                                                        })
-                                                    }
-                                                >
-                                                    <option value="">Please select</option>
-                                                    <option value="2">Approved</option>
-                                                    <option value="3">Rejected</option>
-                                                </Form.Select>
-
-                                                <label>UT Date Requested</label>
-                                                <DateInput placeholder={selectedPendingUT.ut_date || ''} disabled />
-
-                                                <label>UT Time Requested</label>
-                                                <Input placeholder={selectedPendingUT.ut_time ? formatTime(selectedPendingUT.ut_time) : ''} disabled />
-
-                                                <label>UT Reason</label>
-                                                <Textarea value={selectedPendingUT.ut_reason || ''} disabled />
-
-                                                <label>Date Filed</label>
-                                                <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
-
-                                                <label>Approved by: </label>
-                                                <Input placeholder={selectedPendingUT.approver_name} disabled />
-
-                                                <label>Approved Date: </label>
-                                                <DateInput placeholder={formatDate(selectedPendingUT.approved_date)} disabled />
-                                                <label>Remarks</label>
-                                                <Textarea value={selectedPendingUT.remarks || ''} onChange={(e) => setSelectedPendingUT({ ...selectedPendingUT, remarks: e.target.value })} />
-                                                <Button type="submit" className="mt-3" color="teal"> Submit</Button>
-                                            </>
-                                        )}
-                                    </form>
-
-                                </Modal>
-
-
-                            </Card.Body>
-                        </Tabs.Panel>
-
-
-                        <Tabs.Panel value="newPending">
                             <Stack>
                                 <Divider />
                                 <Title className="ms-3" order={4}>
@@ -566,13 +503,13 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
 
                                 </Title>
                                 <Flex className="ms-3">
-                                    <Button onClick={() => openModal()} color='green'> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red' ms={10}> Reject all</Button>
+                                    <Button onClick={() => openModal()} color='green' variant="outline"> Approve all</Button>
+                                    <Button onClick={() => openModal2()} color='red' ms={10} variant="outline"> Reject all</Button>
                                     {selectedRowCount > 0 && (
                                         <>
 
-                                            <Button onClick={() => handleUpdateStatus(2)} ms={10} color='green'> Approve Selected</Button>
-                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10}> Reject Selected</Button>
+                                            <Button onClick={() => handleUpdateStatus(2)} ms={10} color='green' variant="outline"> Approve Selected</Button>
+                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10} variant="outline"> Reject Selected</Button>
                                         </>
                                     )}
                                 </Flex>
@@ -580,7 +517,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                     <MRT_GlobalFilterTextInput table={pendingTable} />
                                     <MRT_TablePagination table={pendingTable} />
                                 </Flex>
-                                <Table >
+                                <Table striped highlightOnHover>
                                     <Table.Thead>
                                         {pendingTable.getHeaderGroups().map((headerGroup) => (
                                             <Table.Tr key={headerGroup.id}>
@@ -603,10 +540,9 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                             <Table.Tr key={row.original.id}>
                                                 {row.getVisibleCells().map((cell) => {
                                                     const isHighlighted = row.original.sec_apprv_no === apprvID;
-                                                    console.log("pepe", row.original);  
                                                     return (
                                                         <Table.Td key={cell.id} style={{
-                                                            color: isHighlighted ? 'lime' : 'inherit', // Highlight color
+                                                            color: isHighlighted ? 'green' : 'inherit', // Highlight color
                                                             fontWeight: isHighlighted ? 'bold' : 'normal', // Optional bold
                                                         }}>
                                                             <MRT_TableBodyCellValue cell={cell} table={pendingTable} />
@@ -618,7 +554,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
 
                                                 <Table.Td>
 
-                                                    <Button onClick={() => handleViewClick(row.original.id)} className="btn btn-primary btn-sm"> View</Button>
+                                                    <ActionIcon onClick={() => handleViewClick(row.original.id)} className="btn btn-primary btn-sm"><IconEdit /> </ActionIcon>
 
                                                 </Table.Td>
                                             </Table.Tr>
@@ -633,95 +569,214 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
 
 
 
-
-
-
-
-
-                        {/* UPDATED TAAAAAAAAAAAAAAAAAAAAAAAAB */}
                         <Tabs.Panel value="updated">
-                            <Card.Body>
-                                <Card.Title>Undertime Updated List</Card.Title>
-                                <Table striped highlightOnHover>
-                                    <Table.Thead>
-                                        <Table.Tr>
-                                            <Table.Th>UT No</Table.Th>
-                                            <Table.Th>Name</Table.Th>
-                                            <Table.Th>Date</Table.Th>
-                                            <Table.Th>Time</Table.Th>
-                                            <Table.Th>Reason</Table.Th>
-                                            <Table.Th>Status</Table.Th>
-                                            <Table.Th>Remarks</Table.Th>
-                                            <Table.Th>Date File</Table.Th>
-                                            <Table.Th>Action</Table.Th>
-                                        </Table.Tr>
-                                    </Table.Thead>
-                                    <Table.Tbody>
+                            <Stack>
+                                <Divider />
+                                <Title className="ms-3" order={4}>
+                                    Updated Table
 
-                                        {UTUpdatedList && UTUpdatedList.length > 0 ? (
-
-                                            paginatedUpdated.map((ut2) => {
-                                                return (
-                                                    <Table.Tr key={ut2.id}>
-                                                        <Table.Td>{ut2.ut_no}</Table.Td>
-                                                        <Table.Td>{ut2.user?.name}</Table.Td>
-                                                        <Table.Td>{ut2.ut_date}</Table.Td>
-                                                        <Table.Td>{formatTime(ut2.ut_time)}</Table.Td>
-                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut2.ut_reason}</Table.Td>
-                                                        <Table.Td>{ut2.status?.mf_status_name}</Table.Td>
-                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}>{ut2.remarks}</Table.Td>
-                                                        <Table.Td>{formatDate(ut2.created_date)}</Table.Td>
-                                                        <Table.Td>
-                                                            <Button onClick={() => handleViewClick2(ut2.id)} className="btn btn-primary btn-sm">View</Button>
-                                                        </Table.Td>
-                                                    </Table.Tr>
-                                                );
-                                            })
-                                        ) : (
-                                            console.log(UTUpdatedList)
-                                        )}
-                                    </Table.Tbody>
-                                    {/* Pagination */}
-                                    <Pagination total={totalUpdatedPages} value={activeUpdatedPage} onChange={setActiveUpdatedPage} mt="sm" />
-                                </Table>
-                                <Modal opened={opened2} onClose={close2} title="UT Request Details" centered>
-
-                                    {selectedPendingUT && (
+                                </Title>
+                                <Flex className="ms-3">
+                                    {selectedRowCount2 > 0 && (
                                         <>
-                                            <label>Reference No.</label>
-                                            <Input value={selectedPendingUT.ut_no || ''} disabled />
 
-                                            <label>UT Status</label>
-                                            <Input
-                                                disabled value={selectedPendingUT.status?.mf_status_name || ''}
-                                            > </Input>
+                                            <Button onClick={() => handleUpdateStatus(1)} ms={10} variant="outline" color='green'> Rollback Selected</Button>
 
-                                            <label>UT Date Requested</label>
-                                            <DateInput placeholder={selectedPendingUT.ut_date || ''} disabled />
-
-                                            <label>UT Time Requested</label>
-                                            <Input placeholder={selectedPendingUT.ut_time ? formatTime(selectedPendingUT.ut_time) : ''} disabled />
-
-                                            <label>UT Reason</label>
-                                            <Textarea value={selectedPendingUT.ut_reason || ''} disabled />
-
-                                            <label>Date Filed</label>
-                                            <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
-
-                                            <label>Approved by: </label>
-                                            <Input placeholder={selectedPendingUT.approver_name} disabled />
-
-                                            <label>Approved Date: </label>
-                                            <DateInput placeholder={formatDate(selectedPendingUT.approved_date)} disabled />
-                                            <label>Remarks</label>
-                                            <Textarea value={selectedPendingUT.remarks || ''} disabled />
                                         </>
                                     )}
 
 
-                                </Modal>
-                            </Card.Body>
+                                </Flex>
+                                <Flex justify="space-between" align="center">
+                                    <MRT_GlobalFilterTextInput table={updatedTable} />
+                                    <MRT_TablePagination table={updatedTable} />
+                                </Flex>
+                                <Table striped highlightOnHover>
+                                    <Table.Thead>
+                                        {updatedTable.getHeaderGroups().map((headerGroup) => (
+                                            <Table.Tr key={headerGroup.id}>
+                                                {headerGroup.headers.map((header) => (
+                                                    <Table.Th key={header.id}>
+                                                        {header.isPlaceholder
+                                                            ? null
+                                                            : flexRender(
+                                                                header.column.columnDef.Header ??
+                                                                header.column.columnDef.header,
+                                                                header.getContext(),
+                                                            )}
+                                                    </Table.Th>
+                                                ))}
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Thead>
+                                    <Table.Tbody>
+                                        {updatedTable.getRowModel().rows.map((row) => (
+                                            <Table.Tr key={row.original.id}>
+                                                {row.getVisibleCells().map((cell) => {
+                                                    const isHighlighted = row.original.sec_apprv_no === apprvID;
+                                                    return (
+                                                        <Table.Td key={cell.id} style={{
+                                                            color: isHighlighted ? 'green' : 'inherit', // Highlight color
+                                                            fontWeight: isHighlighted ? 'bold' : 'normal', // Optional bold
+                                                        }}>
+                                                            <MRT_TableBodyCellValue cell={cell} table={updatedTable} />
+                                                        </Table.Td>
+                                                    );
+                                                }
+
+                                                )}
+
+
+
+                                                <Table.Td>
+                                                    <ActionIcon onClick={() => handleViewClick3(row.original.id)} color="lime" className="btn btn-primary btn-sm"><IconEdit /> </ActionIcon>
+
+                                                    <ActionIcon onClick={() => handleViewClick2(row.original.id)} className="btn btn-primary btn-sm ms-2"><IconEye /> </ActionIcon>
+
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        ))}
+                                    </Table.Tbody>
+                                </Table>
+                                <MRT_ToolbarAlertBanner stackAlertBanner table={updatedTable} />
+                            </Stack>
+
                         </Tabs.Panel>
+
+
+
+
+
+                        <Modal size="l" opened={opened2} onClose={close2} title="UT Request Details" centered>
+
+                            {selectedPendingUT && (
+                                <>
+                                    <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                        <TextInput label="Reference No." value={selectedPendingUT.ut_no || ''} disabled />
+
+                                        <TextInput label="UT Status"
+                                            disabled value={selectedPendingUT.status?.mf_status_name || ''}
+                                        />
+                                    </Box>
+                                    <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                        <DateInput label="UT Date Requested" placeholder={selectedPendingUT.ut_date || ''} disabled />
+
+                                        <TextInput label="UT Time Requested" placeholder={selectedPendingUT.ut_time ? formatTime(selectedPendingUT.ut_time) : ''} disabled />
+                                    </Box>
+                                    <Textarea label="UT Reason" value={selectedPendingUT.ut_reason || ''} disabled />
+
+                                    <DateInput label="Date Filed" placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
+
+                                    <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                        <TextInput label="Approved by" placeholder={selectedPendingUT.approver_name} disabled />
+                                        <DateInput label="Approved Date" placeholder={formatDate(selectedPendingUT.approved_date)} disabled />
+                                    </Box>
+                                    <Textarea label="Remarks" value={selectedPendingUT.remarks || ''} disabled />
+                                </>
+                            )}
+
+
+                        </Modal>
+                        <Modal size="l" opened={opened} onClose={close} title="UT Edit Request Details" centered> {/* View */}
+                            <form onSubmit={handleEditSubmit}>
+
+                                {selectedPendingUT && (
+                                    <>
+                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                            <TextInput label="Reference No." value={selectedPendingUT.ut_no || ''} disabled />
+
+                                            <Select
+                                                placeholder="Pick status"
+                                                label="Status"
+                                                value={selectedPendingUT.ut_status_id || ''}
+                                                onChange={(value) =>
+                                                    setSelectedPendingUT({
+                                                        ...selectedPendingUT,
+                                                        ut_status_id: value
+
+                                                    })
+                                                }
+                                                data={[
+                                                    { value: '2', label: 'Approved' },
+                                                    { value: '3', label: 'Disapproved' }
+                                                ]}
+                                            />
+                                        </Box>
+                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                            <DateInput label="UT Date Requested" placeholder={selectedPendingUT.ut_date || ''} disabled />
+
+                                            <TextInput label="UT Time Requested" placeholder={selectedPendingUT.ut_time ? formatTime(selectedPendingUT.ut_time) : ''} disabled />
+                                        </Box>
+                                        <label>UT Reason</label>
+                                        <Textarea value={selectedPendingUT.ut_reason || ''} disabled />
+
+                                        <label>Date Filed</label>
+                                        <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
+
+                                        <label>Remarks</label>
+                                        <Textarea value={selectedPendingUT.remarks || ''} onChange={(e) => setSelectedPendingUT({ ...selectedPendingUT, remarks: e.target.value })} />
+                                        <Button type="submit" className="mt-3" color="teal"> Submit</Button>
+                                    </>
+                                )}
+                            </form>
+
+                        </Modal>
+                        <Modal opened={opened3} onClose={close3} title="UT Rollback Request Details" centered> {/* View */}
+
+                            <form onSubmit={handleEditSubmit}>
+
+                                {selectedPendingUT && (
+                                    <>
+                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                            <TextInput label="Reference No." value={selectedPendingUT.ut_no || ''} disabled />
+
+                                            <Select
+                                                label="UT Status"
+                                                value={selectedPendingUT.ut_status_id || ''}
+                                                onChange={(value) =>
+                                                    setSelectedPendingUT({
+                                                        ...selectedPendingUT,
+                                                        ut_status_id: value || '',
+
+                                                    })
+                                                }
+                                                data={[
+                                                    { value: '1', label: 'Pending' },
+                                                ]}
+                                            />
+
+                                        </Box>
+                                        <Textarea label="Approver Remarks" required value={selectedPendingUT.remarks || ''} onChange={(e) => setSelectedPendingUT({ ...selectedPendingUT, remarks: e.target.value })} />
+
+                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                            <DateInput label="UT Date Requested" placeholder={selectedPendingUT.ut_date || ''} disabled />
+
+                                            <TextInput label="UT Time Requested" placeholder={selectedPendingUT.ut_time ? formatTime(selectedPendingUT.ut_time) : ''} disabled />
+                                        </Box>
+                                        <label>UT Reason</label>
+                                        <Textarea value={selectedPendingUT.ut_reason || ''} disabled />
+
+                                        <label>Date Filed</label>
+                                        <DateInput placeholder={formatDate(selectedPendingUT.created_date) || ''} disabled />
+                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+
+                                            <TextInput label="Approved by" placeholder={selectedPendingUT.approver_name} disabled />
+
+                                            <DateInput label="Approved Date" placeholder={formatDate(selectedPendingUT.approved_date)} disabled />
+                                        </Box>
+
+                                        <Button type="submit" className="mt-3" color="teal"> Submit</Button>
+                                    </>
+                                )}
+                            </form>
+
+                        </Modal>
                     </Tabs>
                 </Card>
             </Container>

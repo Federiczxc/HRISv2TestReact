@@ -20,7 +20,7 @@ class OBController extends Controller
         $currentUser = Auth::user()->emp_no;
         $obList = OBModel::with(['user', 'status'])
             ->where('emp_no', $currentUser)
-            ->whereIn('ob_status_id', [1,2,3])
+            ->whereIn('ob_status_id', [1, 2, 3])
             ->get()
             ->map(function ($ob) {
                 $approver = User::where('emp_no', $ob->approved_by)->first();
@@ -46,23 +46,28 @@ class OBController extends Controller
             'date_to' => 'required|date|after_or_equal:date_from',
             'time_to' => 'required',
             'person_to_meet' => 'required',
-            'ob_purpose' => 'required'
+            'ob_purpose' => 'required',
+            'ob_attach.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
         $user = Auth::user();
         $lastOBEntry = OBModel::orderBy('ob_no', 'desc')->first();
         $newOBNo = 'OB-' . sprintf('%09d', optional($lastOBEntry)->ob_no ? ((int) str_replace('OB-', '', $lastOBEntry->ob_no) + 1) : 1);
-        if ($request->hasFile('ob_attach')) {
-            $file = $request->file('ob_attach');
-            $filename = time() . '-' . $file->getClientOriginalName();
-            $path = $file->storeAs('ob_attachments', $filename, 'public');
-        } else {
-            $path = NULL;
-        }
+        
         $today = now()->startOfDay(); // Start of today for comparison
         $dateFrom = \Carbon\Carbon::parse($request->date_from);
 
         $obTypeId = $dateFrom->lt($today) ? 2 : 1;
+        $filePaths = [];
+        if ($request->hasFile('ob_attach')) {
+            foreach ($request->file('ob_attach') as $file) {
+                $filename = time() . '-' . $file->getClientOriginalName();
+                $path = $file->storeAs('ob_attachments', $filename, 'public');
+                $filePaths[] = $path;
+            }
+        }
 
+        // Save file paths as JSON
+        $attachmentsJson = json_encode($filePaths);
         $obEntry = OBModel::create([
             'ob_status_id' => 1,
             'ob_no' => $newOBNo,
@@ -80,7 +85,7 @@ class OBController extends Controller
             'sec_apprv_no' => $user->sec_apprv2_no,
             'created_by' => $user->id,
             'updated_by' => $user->id,
-            'ob_attach' => $path,
+            'ob_attach' => $attachmentsJson,
         ]);
 
         return back()->with('success', 'Official Business Entry created successfully.');

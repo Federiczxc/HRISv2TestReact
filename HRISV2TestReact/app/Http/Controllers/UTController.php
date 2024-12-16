@@ -195,7 +195,7 @@ class UTController extends Controller
     {
         $validated = $request->validate([
             'rows.*.id' => 'required',
-            'rows.*.ut_status_id' => 'required|in:2,3',
+            'rows.*.ut_status_id' => 'required|in:1,2,3',
         ]);
         
         $currentUser = Auth::user()->emp_no;
@@ -204,8 +204,8 @@ class UTController extends Controller
             if ($ut) {
                 $ut->update([
                     'ut_status_id' => $row['ut_status_id'],
-                    'approved_by' => $currentUser,
-                    'approved_date' => Carbon::now(),
+                    'approved_by' => $row['ut_status_id'] === 1 ? null : $currentUser,
+                    'approved_date' =>$row['ut_status_id'] === 1 ? null : Carbon::now(),
                     'updated_by' => Auth::user()->emp_no,
                     'updated_date' => Carbon::now(),
                 ]);
@@ -248,10 +248,9 @@ class UTController extends Controller
     public function editUTApprRequest(Request $request) //MODAL Edit
     {
         $ut = UTModel::where('ut_no', $request->ut_no)
-            ->where('ut_status_id', 1)
             ->first();
         $validated = $request->validate([
-            'ut_status_id' => 'required|in:2,3',
+            'ut_status_id' => 'required|in:1,2,3',
             'remarks' => 'nullable|string' // Validate that it is either 2 or 3
         ]);
         $currentUser = Auth::user()->emp_no;

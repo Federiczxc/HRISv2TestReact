@@ -3,10 +3,10 @@ import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
 
 import { useForm, router } from '@inertiajs/react'
-import {  Form } from 'react-bootstrap';
-import { ActionIcon, Card, Container, Group, Text, Tabs, rem, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput, FileInput } from '@mantine/core';
+import { Form } from 'react-bootstrap';
+import { ActionIcon, SimpleGrid, Card, Container, Group, Text, Tabs, rem, Title, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput, FileInput } from '@mantine/core';
 import { DateInput, DatePickerInput, TimeInput } from '@mantine/dates';
-import { IconClock, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
+import { IconClock, IconEye, IconEdit, IconTrash, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Dropzone } from '@mantine/dropzone';
 
@@ -43,14 +43,14 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
         if (acceptedFiles.length > 0) {
             setValues((prevValues) => ({
                 ...prevValues,
-                ob_attach: acceptedFiles[0],
+                ob_attach: acceptedFiles,
             }));
-            console.log("Att", acceptedFiles[0]);
+            console.log("Att", acceptedFiles);
 
         }
     };
 
-    const [tabValue, setTabValue] = useState("obentry");
+    const [tabValue, setTabValue] = useState("ob_entry_list");
 
     function handleSubmit(e) {
         e.preventDefault();
@@ -75,24 +75,76 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                closeForm();
+
             },
         })
     }
-    function handleChange(name, value) { //For inputting date
+
+    function handleChange(name, value) {
         setValues((prevValues) => {
             const updatedValues = {
-
                 ...prevValues,
-                [name]: value, // Convert ut_date to Date object
+                [name]: value,
             };
-            if (updatedValues.date_from && updatedValues.date_to) {
-                const dateFrom = dayjs(updatedValues.date_from);
-                const dateTo = dayjs(updatedValues.date_to);
-                const days_count = dateTo.diff(dateFrom, 'day');
-                updatedValues.ob_days = Math.max(days_count, 0);
-            }
-            return updatedValues;
 
+            const today = dayjs().startOf('day');  // Today's date without time
+
+            const minDate = today.subtract(1, 'month');
+
+            const dateFrom = updatedValues.date_from && updatedValues.time_from
+                ? dayjs(updatedValues.date_from).hour(updatedValues.time_from.split(':')[0]).minute(updatedValues.time_from.split(':')[1])
+                : null;
+
+            if (dateFrom && dateFrom.isBefore(minDate, 'day')) {
+                notifications.show({
+                    title: 'Error',
+                    message: `You cannot file an OB request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+
+                updatedValues.date_from = '';
+            }
+
+            const dateTo = updatedValues.date_to && updatedValues.time_to
+                ? dayjs(updatedValues.date_to).hour(updatedValues.time_to.split(':')[0]).minute(updatedValues.time_to.split(':')[1])
+                : null;
+
+            if (dateTo && dateTo.isBefore(minDate, 'day')) {
+                notifications.show({
+                    title: 'Error',
+                    message: `You cannot file an OB request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+
+                updatedValues.date_to = '';
+            }
+
+            if (dateFrom && dateTo) {
+                const daysDiff = dateTo.diff(dateFrom, 'days');
+
+                let excludedSundays = 0;
+                let currentDate = dateFrom;
+
+                // Loop through the days between dateFrom and dateTo, excluding Sundays
+                while (currentDate.isBefore(dateTo) || currentDate.isSame(dateTo, 'day')) {
+                    if (currentDate.day() === 0) {
+                        excludedSundays++;
+                    }
+                    currentDate = currentDate.add(1, 'day');
+                }
+
+                // Calculate the final days count after excluding Sundays
+                let daysCount = Math.max(daysDiff - excludedSundays, 0);
+
+                updatedValues.ob_days = daysCount;
+            }
+
+            return updatedValues;
         });
     }
     function handleSpoil(obId) {
@@ -154,18 +206,31 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
         )
     }
-    const preview = values.ob_attach && values.ob_attach instanceof File ? (
+    const preview = values.ob_attach && Array.isArray(values.ob_attach) ? (
+        values.ob_attach.map((file) => (
+            <Box key={file.name} style={{ alignItems: "center" }}>
 
-        <Image
-            key={values.ob_attach.name}
-            style={{ marginTop: '1rem' }}
-            w={256}
-            h={256}
-            src={URL.createObjectURL(values.ob_attach)}
-            onLoad={() => URL.revokeObjectURL(values.ob_attach)}
-            alt="Preview"
-        />
+                {file.type.startsWith('image/') ? (
+                    <Image
+                        w={128}
+                        h={128}
+                        src={URL.createObjectURL(file)}
+                        onLoad={() => URL.revokeObjectURL(file)}
+                        alt={`Preview of ${file.name}`}
+                    />
+                ) : (
+                    <Box style={{ width: 128, height: 128, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <Text size="xl" color="dimmed">File</Text>
+                    </Box>
+                )}
+                <Text truncate style={{ marginTop: '8px', textAlign: 'center' }}>
+                    {file.name}
+                </Text>
+            </Box>
+
+        ))
     ) : null;
+
     const ref = useRef(null);
     const pickerControl = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
         <IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />
@@ -251,15 +316,18 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
     const [editOpened, setEditOpened] = useState(false);
     const open2 = () => setEditOpened(true);
     const close2 = () => setEditOpened(false);
+    const [openedForm, setOpenedForm] = useState(false);
+    const openForm = () => setOpenedForm(true);
+    const closeForm = () => setOpenedForm(false);
     return (
         <AppLayout>
             <Container fluid className="mt-3">
                 <Card withBorder w={1300}>
+                    <Box className="">
+                        <Button onClick={() => openForm()} color='green'> Create OB</Button>
+                    </Box>
                     <Tabs color="lime" radius="xs" defaultValue="Entry" value={tabValue} onChange={setTabValue}>
                         <Tabs.List>
-                            <Tabs.Tab value="obentry">
-                                OB Entry
-                            </Tabs.Tab>
                             <Tabs.Tab value="ob_entry_list">
                                 OB Entry List
                             </Tabs.Tab>
@@ -267,205 +335,216 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                 OB Spoiled
                             </Tabs.Tab>
                         </Tabs.List>
-                        <Tabs.Panel value="obentry">
+                        <Modal size="auto" opened={openedForm} onClose={closeForm} title={<strong>Create OB </strong>} closeOnClickOutside={false} centered>
 
-                            <Card>
-                                <Card.Section className="mt-3" style={{ color: "gray" }}> Official Business Entry</Card.Section>
-                                <form onSubmit={handleSubmit}>
-                                    <Box style={{ display: "flex", flexiwrap: "wrap" }}>
-                                        <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
-                                            <TextInput
-                                                name="destination"
-                                                value={values.destination}
-                                                label="Destination"
-                                                placeholder="Destination"
-                                                style={{ width: 500 }}
-                                                onChange={(event) => handleChange(event.target.name, event.target.value)} />
-                                            <Box style={{ display: "flex", gap: "1rem" }}>
-                                                <DateInput
-                                                    name="date_from"
-                                                    value={values.date_from ? new Date(values.date_from) : null}
-                                                    label="Date from"
-                                                    placeholder="Pick date"
-                                                    rightSection={<IconCalendar />}
-                                                    style={{ width: 175 }}
-                                                    onChange={(value) => {
-                                                        if (value) {
 
-                                                            const selectedDate = new Date(value);
-                                                            const today = new Date();
-                                                            const dateTo = new Date(values.date_to);
-                                                            today.setHours(0, 0, 0, 0);
-                                                            if (selectedDate < today) {
-                                                                notifications.show({
-                                                                    title: 'Warning',
-                                                                    message: `You are currently late filing a UT Request`,
-                                                                    position: 'top-center',
-                                                                    color: 'yellow',
-                                                                    autoClose: 5000,
-                                                                })
-                                                            }
+                            <form onSubmit={handleSubmit}>
+                                <Box style={{ display: "flex", flexiwrap: "wrap" }}>
+                                    <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
+                                        <TextInput
+                                            required
+                                            name="destination"
+                                            value={values.destination}
+                                            label="Destination"
+                                            placeholder="Destination"
+                                            style={{ width: 500 }}
+                                            onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                        <Box style={{ display: "flex", gap: "1rem" }}>
+                                            <DateInput
+                                                required
+                                                name="date_from"
+                                                value={values.date_from ? new Date(values.date_from) : null}
+                                                label="Date from"
+                                                placeholder="Pick date"
+                                                rightSection={<IconCalendar />}
+                                                style={{ width: 175 }}
+                                                onChange={(value) => {
+                                                    if (value) {
 
-                                                            if (selectedDate > dateTo) {
-                                                                notifications.show({
-                                                                    title: 'Error',
-                                                                    message: `The "Date From" cannot be later than "Date To".`,
-                                                                    position: 'top-center',
-                                                                    color: 'red',
-                                                                    autoClose: 5000,
-                                                                })
-                                                            } else {
-                                                                handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                        const selectedDate = new Date(value);
+                                                        const today = new Date();
+                                                        const dateTo = new Date(values.date_to);
+                                                        today.setHours(0, 0, 0, 0);
+                                                        if (selectedDate < today) {
+                                                            notifications.show({
+                                                                title: 'Warning',
+                                                                message: `You are currently late filing a UT Request`,
+                                                                position: 'top-center',
+                                                                color: 'yellow',
+                                                                autoClose: 5000,
+                                                            })
+                                                        }
 
-                                                            }
+                                                        if (selectedDate > dateTo) {
+                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+
+                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
                                                         } else {
-                                                            handleChange("date_from", '');
-                                                        }
-                                                    }}
-
-                                                />
-                                                <DateInput
-                                                    name="date_to"
-                                                    value={values.date_to ? new Date(values.date_to) : null}
-                                                    label="Date to"
-                                                    placeholder="Pick date"
-                                                    rightSection={<IconCalendar />}
-                                                    style={{ width: 175 }}
-                                                    onChange={(value) => {
-                                                        if (value) {
-                                                            const dateFrom = new Date(values.date_from);
-                                                            const selectedDate = new Date(value);
-                                                            if (selectedDate < dateFrom) {
-                                                                notifications.show({
-                                                                    title: 'Error',
-                                                                    message: `The "Date to" cannot be earlier than "Date from".`,
-                                                                    position: 'top-center',
-                                                                    color: 'red',
-                                                                    autoClose: 5000,
-                                                                })
-                                                            } else {
-                                                                handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                            if (!values.date_to) {
+                                                                handleChange("date_to", dayjs(value).format('YYYY-MM-DD'));
                                                             }
                                                         }
-                                                        else {
-                                                            handleChange("date_to", '');
-                                                        }
-                                                    }}
-                                                />
-                                                < TextInput
-                                                    label="OB Days"
-                                                    name="ob_days"
-                                                    value={values.ob_days}
-                                                    disabled
-                                                    style={{ width: 100 }
+                                                    } else {
+                                                        handleChange("date_from", '');
+                                                        handleChange("date_to", '');
                                                     }
-                                                />
-                                            </Box>
+                                                }}
 
-                                            <Box style={{ display: "flex", gap: "1rem" }}>
-                                                <TimeInput
-                                                    label="Time From"
-                                                    name="time_from"
-                                                    value={values.time_from}
-                                                    ref={ref}
-                                                    rightSection={pickerControl}
-                                                    style={{ width: 175 }}
-                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                            />
+                                            <DateInput
+                                                required
+                                                name="date_to"
+                                                value={values.date_to ? new Date(values.date_to) : null}
+                                                label="Date to"
+                                                placeholder="Pick date"
+                                                rightSection={<IconCalendar />}
+                                                style={{ width: 175 }}
+                                                onChange={(value) => {
+                                                    if (value) {
+                                                        const dateFrom = new Date(values.date_from);
+                                                        const selectedDate = new Date(value);
+                                                        if (selectedDate < dateFrom) {
+                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
 
-                                                <TimeInput label="Time To"
-                                                    name="time_to"
-                                                    value={values.time_to}
-                                                    ref={ref2}
-                                                    rightSection={pickerControl2}
-                                                    style={{ width: 175 }}
-                                                    onChange={(event) => handleChange(event.target.name, event.target.value)} />
 
-                                            </Box>
-                                            <TextInput
-                                                label="Person to Meet"
-                                                name="person_to_meet"
-                                                value={values.person_to_meet}
-                                                placeholder="Person to Meet"
-                                                style={{ width: 500 }}
+                                                        } else {
+                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                            if (!values.date_to) {
+                                                                handleChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                            }
+                                                        }
+                                                    }
+                                                    else {
+                                                        handleChange("date_to", '');
+                                                    }
+                                                }}
+                                            />
+                                            < TextInput
+                                                label="OB Days"
+                                                name="ob_days"
+                                                value={values.ob_days}
+                                                disabled
+                                                style={{ width: 100 }
+                                                }
+                                            />
+                                        </Box>
+
+                                        <Box style={{ display: "flex", gap: "1rem" }}>
+                                            <TimeInput
+                                                required
+                                                label="Time From"
+                                                name="time_from"
+                                                value={values.time_from}
+                                                ref={ref}
+                                                rightSection={pickerControl}
+                                                style={{ width: 175 }}
                                                 onChange={(event) => handleChange(event.target.name, event.target.value)} />
-                                            <Textarea
-                                                label="Purpose"
-                                                name="ob_purpose"
-                                                value={values.ob_purpose}
-                                                autosize
-                                                minRows={2}
-                                                maxRows={4}
-                                                style={{ width: 500 }}
+
+                                            <TimeInput label="Time To"
+                                                required
+                                                name="time_to"
+                                                value={values.time_to}
+                                                ref={ref2}
+                                                rightSection={pickerControl2}
+                                                style={{ width: 175 }}
                                                 onChange={(event) => handleChange(event.target.name, event.target.value)} />
 
                                         </Box>
+                                        <TextInput
+                                            required
+                                            label="Person to Meet"
+                                            name="person_to_meet"
+                                            value={values.person_to_meet}
+                                            placeholder="Person to Meet"
+                                            style={{ width: 500 }}
+                                            onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                        <Textarea
+                                            required
+                                            label="Purpose"
+                                            name="ob_purpose"
+                                            value={values.ob_purpose}
+                                            autosize
+                                            minRows={2}
+                                            maxRows={4}
+                                            style={{ width: 500 }}
+                                            onChange={(event) => handleChange(event.target.name, event.target.value)} />
+
+                                    </Box>
 
 
-                                        <Box style={{ flex: "1 1 35%", minWidth: "300px" }}>
-                                            <Dropzone
-                                                onDrop={handleFileChange}
-                                                onReject={(ob_attach) => console.log('rejected files', ob_attach)}
-                                                maxSize={5 * 1024 ** 2}
-                                                style={{ width: 500 }}>
-                                                <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
-                                                    <Dropzone.Accept>
-                                                        <IconUpload
-                                                            style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
-                                                            stroke={1.5}
-                                                        />
-                                                    </Dropzone.Accept>
-                                                    <Dropzone.Reject>
-                                                        <IconX
-                                                            style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
-                                                            stroke={1.5}
-                                                        />
-                                                    </Dropzone.Reject>
-                                                    <Dropzone.Idle>
-                                                        <IconPhoto
-                                                            style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
-                                                            stroke={1.5}
-                                                        />
-                                                    </Dropzone.Idle>
+                                    <Box style={{ flex: "1 1 35%", }}>
+                                        <Dropzone
+                                            onDrop={handleFileChange}
+                                            onReject={(ob_attach) => console.log('rejected files', ob_attach)}
+                                            maxSize={5 * 1024 ** 2}
+                                            multiple
+                                            style={{ width: "100%" }}>
+                                            <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
+                                                <Dropzone.Accept>
+                                                    <IconUpload
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Accept>
+                                                <Dropzone.Reject>
+                                                    <IconX
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Reject>
+                                                <Dropzone.Idle>
+                                                    <IconPhoto
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Idle>
 
-                                                    <Box>
-                                                        <Text size="xl" inline>
-                                                            Drag image or document here
-                                                        </Text>
-                                                        <Text size="sm" c="dimmed" inline mt={7}>
-                                                            Each file should not exceed 5mb. Image will be previewed.
-                                                        </Text>
-                                                    </Box>
-                                                </Group>
-                                            </Dropzone>
+                                                <Box>
+                                                    <Text size="xl" inline>
+                                                        Drag image or document here
+                                                    </Text>
+                                                    <Text size="sm" c="dimmed" inline mt={7}>
+                                                        Each file should not exceed 5mb. Image will be previewed.
+                                                    </Text>
+                                                </Box>
+                                            </Group>
+                                        </Dropzone>
 
-                                            {preview}
-
-
+                                        <Box>
+                                            <Text size="sm" weight={500} mb="sm">
+                                            </Text>
+                                            <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                {preview}
+                                            </SimpleGrid>
                                         </Box>
 
-                                    </Box>
-                                    <Box style={{ display: "flex", justifyContent: "flex-end", marginRight: 90 }}><Button type="submit"> Submit </Button>
-                                    </Box>
-                                </form>
 
-                            </Card>
-                        </Tabs.Panel>
+                                    </Box>
+
+                                </Box>
+                                <Box style={{ display: "flex", justifyContent: "flex-end", marginRight: 90 }}><Button type="submit"> Submit </Button>
+                                </Box>
+                            </form>
+
+                        </Modal>
                         <Tabs.Panel value="ob_entry_list">
                             <Card>
-                                <Card.Section className="mt-3" style={{ color: "gray" }}>
+                                <Card.Section>
                                     OB Entry List
                                 </Card.Section>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
-                                            <Table.Th> Reference No.</Table.Th>
-                                            <Table.Th> EmployeeName</Table.Th>
+                                            <Table.Th w={25}> Reference No.</Table.Th>
+                                            <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
                                             <Table.Th> Time From</Table.Th>
                                             <Table.Th> Time To</Table.Th>
                                             <Table.Th> Destination</Table.Th>
-                                            <Table.Th> To Meet</Table.Th>
+                                            <Table.Th w={100}> Person To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Date File</Table.Th>
@@ -477,7 +556,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                             paginatedData.map((ob) => {
                                                 return (
                                                     <Table.Tr key={ob.ob_id}>
-                                                        <Table.Td> {ob.ob_no}</Table.Td>
+                                                        <Table.Td width={150}> {ob.ob_no}</Table.Td>
                                                         <Table.Td> {ob.user?.name}</Table.Td>
                                                         <Table.Td> {ob.date_from}</Table.Td>
                                                         <Table.Td> {ob.date_to}</Table.Td>
@@ -486,15 +565,16 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                         <Table.Td> {ob.destination}</Table.Td>
                                                         <Table.Td> {ob.person_to_meet}</Table.Td>
 
-                                                        <Table.Td> {ob.ob_purpose}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {ob.ob_purpose}</Table.Td>
                                                         <Table.Td> {ob.status?.mf_status_name}</Table.Td>
                                                         <Table.Td> {formatDate(ob.created_date)}</Table.Td>
-                                                        <Table.Td>   <Button onClick={() => handleViewClick(ob.ob_id)} className="btn btn-primary btn-sm">View</Button>
+                                                        <Table.Td>
+                                                            <ActionIcon onClick={() => handleViewClick(ob.ob_id)} ><IconEye /></ActionIcon>
                                                             {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
-                                                                <Button onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-2">Edit</Button>
+                                                                <ActionIcon onClick={() => handleEditClick(ob.ob_id)} color="yellow" className="ms-2"><IconEdit /></ActionIcon>
                                                             )}
                                                             {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
-                                                                <Button onClick={() => handleSpoil(ob.ob_id)} color="red" className="ms-2">Delete</Button>
+                                                                <ActionIcon onClick={() => handleSpoil(ob.ob_id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
 
                                                             )}
                                                         </Table.Td>
@@ -506,9 +586,10 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                         )}
 
                                     </Table.Tbody>
-                                    <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
                                 </Table>
-                                <Modal size="l" opened={opened} onClose={close} title="OB Request Details">
+                                <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+
+                                <Modal size="xl" opened={opened} onClose={close} title="OB Request Details">
                                     {selectedOB && (
                                         <>
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -546,22 +627,30 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                 <TextInput label="Approved by" placeholder={selectedOB.approver_name || ''} disabled />
                                                 <TextInput label="Approved Date" placeholder={selectedOB.approved_date || ''} disabled />
                                             </Box>
-                                            {selectedOB.ob_attach ? (
-                                                <Box w={300}>
+                                            {
+                                                selectedOB.ob_attach && Array.isArray(JSON.parse(selectedOB.ob_attach)) ? (
+                                                    JSON.parse(selectedOB.ob_attach).map((file, index) => (
+                                                        <Box key={index} w={300} style={{ marginBottom: '1rem' }}>
+                                                            <Text truncate="start">{file}</Text>
 
-                                                    <Text truncate="start">{selectedOB.ob_attach}</Text>
-                                                    <Image
-                                                        style={{ marginTop: '1rem' }}
-                                                        w={256}
-                                                        h={256}
-                                                        centered
-                                                        src={`/storage/${selectedOB.ob_attach}`}
-                                                    />
-                                                </Box>
-
-                                            ) : (
-                                                <p>No attachment available.</p>
-                                            )}
+                                                            {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+                                                                <Image
+                                                                    w={128}
+                                                                    h={128}
+                                                                    src={`/storage/${file}`}
+                                                                    alt={`Preview of ${file}`}
+                                                                />
+                                                            ) : (
+                                                                <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                                    <Text size="xl" color="dimmed">File</Text>
+                                                                </Box>
+                                                            )}
+                                                        </Box>
+                                                    ))
+                                                ) : (
+                                                    <p>No attachment available.</p>
+                                                )
+                                            }
 
                                         </>
                                     )}
@@ -745,14 +834,14 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                     <Table.Thead>
                                         <Table.Tr>
                                             <Table.Th> Reference No.</Table.Th>
-                                            <Table.Th> Name</Table.Th>
-                                            <Table.Th> Date Range</Table.Th>
-                                            <Table.Th> Time Range</Table.Th>
+                                            <Table.Th> Employee Name</Table.Th>
+                                            <Table.Th> Date From</Table.Th>
+                                            <Table.Th> Date To</Table.Th>
                                             <Table.Th> Destination</Table.Th>
-                                            <Table.Th> To Meet</Table.Th>
+                                            <Table.Th> Person To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
                                             <Table.Th> Status</Table.Th>
-                                            <Table.Th> Date File</Table.Th>
+                                            <Table.Th> Deleted on</Table.Th>
                                             <Table.Th> Action</Table.Th>
                                         </Table.Tr>
                                     </Table.Thead>
@@ -768,10 +857,10 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                         <Table.Td> {ob.destination}</Table.Td>
                                                         <Table.Td> {ob.person_to_meet}</Table.Td>
 
-                                                        <Table.Td> {ob.ob_purpose}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {ob.ob_purpose}</Table.Td>
                                                         <Table.Td> {ob.status?.mf_status_name}</Table.Td>
-                                                        <Table.Td> {formatDate(ob.created_date)}</Table.Td>
-                                                        <Table.Td>   
+                                                        <Table.Td> {formatDate(ob.updated_date)}</Table.Td>
+                                                        <Table.Td>
                                                             {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
                                                                 <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2">Delete</Button>
 
@@ -785,7 +874,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                         )}
 
                                     </Table.Tbody>
-                                    <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+                                    <Pagination total={totalPages2} value={activePage2} onChange={setActivePage2} color="lime.4" mt="sm" />
                                 </Table>
 
 

@@ -381,7 +381,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                                     rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5}/>}
                                                     onChange={(event) => handleChange(event.target.name, event.target.value)}
                                                     style={{ width: 125 }}
-                                                />
+                                      adasda as a          />
                                                 <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
                                                 <Button type="submit" className="mt-3" color="teal">Submit</Button>
                                             </>
