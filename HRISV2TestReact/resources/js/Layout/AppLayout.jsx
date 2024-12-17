@@ -7,24 +7,24 @@ import '@mantine/notifications/styles.css';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/dropzone/styles.css';
-import 'mantine-react-table/styles.css'; 
-const AppLayout = ({ children }) => {
-    return (
-        <div>
-            {/* Navbar */}
-            <Navbar />
-            {/* Main Content */}
-            <MantineProvider >
-            <Notifications/>
-            <ModalsProvider>
-                
-            </ModalsProvider>
-            <main className="container mt-4">
-                {children}
-            </main>
-            </MantineProvider>
+import 'mantine-react-table/styles.css';
+import "react-medium-image-zoom/dist/styles.css";
 
-        </div>
+const AppLayout = ({ children }) => {
+
+    return (
+
+        <MantineProvider>
+            <Notifications />
+            <ModalsProvider>
+                <Navbar />
+
+                <main className="container mt-4">
+                    {children}
+                </main>
+            </ModalsProvider>
+
+        </MantineProvider>
     );
 };
 

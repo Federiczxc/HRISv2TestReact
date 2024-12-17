@@ -197,7 +197,7 @@ class UTController extends Controller
             'rows.*.id' => 'required',
             'rows.*.ut_status_id' => 'required|in:1,2,3',
         ]);
-        
+
         $currentUser = Auth::user()->emp_no;
         foreach ($validated['rows'] as $row) {
             $ut = UTModel::find($row['id']);
@@ -205,14 +205,13 @@ class UTController extends Controller
                 $ut->update([
                     'ut_status_id' => $row['ut_status_id'],
                     'approved_by' => $row['ut_status_id'] === 1 ? null : $currentUser,
-                    'approved_date' =>$row['ut_status_id'] === 1 ? null : Carbon::now(),
+                    'approved_date' => $row['ut_status_id'] === 1 ? null : Carbon::now(),
                     'updated_by' => Auth::user()->emp_no,
                     'updated_date' => Carbon::now(),
                 ]);
             }
         }
         return redirect()->intended('/UT_Module/ut_appr_list');
-
     }
 
     public function updateUTRequest(Request $request, $id) //Quickedit
@@ -287,11 +286,38 @@ class UTController extends Controller
             'UTReportsList' => $appr_list,
         ]);
     }
-    public function viewUTReportRequest($id)
+    /*    public function viewUTReportRequest($id)
     {
         $viewUTReportRequest = UTModel::findorfail($id);
         return Inertia::render('UT_Module/ut_reports_list', [
             'viewUTReportRequest' => $viewUTReportRequest,
         ]);
+    } */
+    public function uploadUTReport(Request $request)
+    {
+        $currentUser = Auth::user()->emp_no;
+
+        $request->validate([
+            'ob_attach' => 'required|array'
+        ]);
+        $csvData = $request->input('ob_attach');
+        foreach ($csvData as $row) {
+            UTModel::create([
+                'ut_no' => $row['Reference No.'],
+                'emp_no' => $row['Employee Name'],
+                'ut_status_id' => $row['Status'],
+                'ut_date' => $row['UT Date'],
+                'ut_time' => $row['UT Time'],
+                'ut_reason' => $row['UT Reason'],
+                'first_apprv_no' => $row['First Approver'],
+                'sec_apprv_no' => $row['Second Approver'],
+                'approved_by' => $row['Approved By'],
+                'created_by' => $currentUser,
+                'created_date' => Carbon::now(),
+                'updated_by' => $currentUser,
+                'updated_date' => Carbon::now(),
+            ]);
+        }
+        return redirect()->intended('/UT_Module/ut_reports_list');
     }
 }

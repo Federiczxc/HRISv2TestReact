@@ -52,7 +52,7 @@ class OBController extends Controller
         $user = Auth::user();
         $lastOBEntry = OBModel::orderBy('ob_no', 'desc')->first();
         $newOBNo = 'OB-' . sprintf('%09d', optional($lastOBEntry)->ob_no ? ((int) str_replace('OB-', '', $lastOBEntry->ob_no) + 1) : 1);
-        
+
         $today = now()->startOfDay(); // Start of today for comparison
         $dateFrom = \Carbon\Carbon::parse($request->date_from);
 
@@ -114,13 +114,16 @@ class OBController extends Controller
             'person_to_meet' => 'required',
             'ob_purpose' => 'required'
         ]);
+        $filePaths = [];
         if ($request->hasFile('ob_attach')) {
-            $file = $request->file('ob_attach');
-            $filename = time() . '-' . $file->getClientOriginalName();
-            $path = $file->storeAs('ob_attachments', $filename, 'public');
-        } else {
-            $path = NULL;
+            foreach ($request->file('ob_attach') as $file) {
+                $filename = time() . '-' . $file->getClientOriginalName();
+                $path = $file->storeAs('ob_attachments', $filename, 'public');
+                $filePaths[] = $path;
+            }
         }
+        $attachmentsJson = json_encode($filePaths);
+
         $ob->destination = $request->destination;
         $ob->date_from = $request->date_from;
         $ob->date_to = $request->date_to;
@@ -130,7 +133,7 @@ class OBController extends Controller
         $ob->ob_purpose = $request->ob_purpose;
         $ob->updated_by = $user;
         $ob->updated_date = Carbon::now();
-        $ob->ob_attach = $path;
+        $ob->ob_attach = $attachmentsJson;
         $ob->save();
         return redirect()->intended('/OB_Module/ob_entry');
     }
@@ -229,7 +232,28 @@ class OBController extends Controller
         }
         return redirect()->intended('/OB_Module/ob_appr_list');
     }
+    public function updateBatch(Request $request)
+    {
+        $validated = $request->validate([
+            'rows.*.ob_id' => 'required',
+            'rows.*.ob_status_id' => 'required|in:1,2,3',
+        ]);
 
+        $currentUser = Auth::user()->emp_no;
+        foreach ($validated['rows'] as $row) {
+            $ob = OBModel::find($row['ob_id']);
+            if ($ob) {
+                $ob->update([
+                    'ob_status_id' => $row['ob_status_id'],
+                    'approved_by' => $row['ob_status_id'] === 1 ? null : $currentUser,
+                    'approved_date' => $row['ob_status_id'] === 1 ? null : Carbon::now(),
+                    'updated_by' => Auth::user()->emp_no,
+                    'updated_date' => Carbon::now(),
+                ]);
+            }
+        }
+        return redirect()->intended('/OB_Module/ob_appr_list');
+    }
     public function updateOBRequest(Request $request, $id) //QuickEdit
     {
         $validated = $request->validate([
@@ -253,10 +277,9 @@ class OBController extends Controller
     public function editOBApprRequest(Request $request) //MODAL EDIT
     {
         $ob = OBModel::where('ob_no', $request->ob_no)
-            ->where('ob_status_id', 1)
             ->first();
         $validated = $request->validate([
-            'ob_status_id' => 'required|in:2,3',
+            'ob_status_id' => 'required|in:1,2,3',
             'appr_remarks' => 'nullable|string' // Validate that it is either 2 or 3
 
         ]);
@@ -295,5 +318,35 @@ class OBController extends Controller
         return Inertia::render('OB_Module/ob_reports_list', [
             'OBReportsList' => $appr_list,
         ]);
+    }
+    public function uploadOBReport(Request $request)
+    {
+        $currentUser = Auth::user()->emp_no;
+
+        $request->validate([
+            'ob_upload' => 'required|array'
+        ]);
+        $csvData = $request->input('ob_upload');
+        foreach ($csvData as $row) {
+            OBModel::create([
+                'ob_no' => $row['Reference No.'],
+                'emp_no' => $row['Employee Name'],
+                'ob_status_id' => $row['Status'],
+                'date_from' => $row['UT Date'],
+                'date_to' => $row['UT Time'],
+                'time_from' => $row['UT Reason'],
+                'time_to' => $row['UT Reason'],
+                'destination' =>$row['Destination'],
+                'person_to_meet' =>$row['Person to meet'],
+                'first_apprv_no' => $row['First Approver'],
+                'sec_apprv_no' => $row['Second Approver'],
+                'approved_by' => $row['Approved By'],
+                'created_by' => $currentUser,
+                'created_date' => Carbon::now(),
+                'updated_by' => $currentUser,
+                'updated_date' => Carbon::now(),
+            ]);
+        }
+        return redirect()->intended('/UT_Module/ut_reports_list');
     }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
-
+import Zoom from "react-medium-image-zoom";
 import { useForm, router } from '@inertiajs/react'
 import { Form } from 'react-bootstrap';
 import { ActionIcon, SimpleGrid, Card, Container, Group, Text, Tabs, rem, Title, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput, FileInput } from '@mantine/core';
@@ -38,17 +38,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
         activePage2 * itemsPerPage2
     );
     const [selectedOB, setSelectedOB] = useState(viewOBRequest);
-    const handleFileChange = (acceptedFiles) => {
 
-        if (acceptedFiles.length > 0) {
-            setValues((prevValues) => ({
-                ...prevValues,
-                ob_attach: acceptedFiles,
-            }));
-            console.log("Att", acceptedFiles);
-
-        }
-    };
 
     const [tabValue, setTabValue] = useState("ob_entry_list");
 
@@ -206,6 +196,31 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
         )
     }
+    const handleFileChange = (acceptedFiles) => {
+
+        if (acceptedFiles.length > 0) {
+            setValues((prevValues) => ({
+                ...prevValues,
+                ob_attach: acceptedFiles,
+            }));
+            console.log("Att", acceptedFiles);
+
+        }
+        else {
+            setSelectedOB((prev) => ({
+                ...prev,
+                ob_attach: [],
+            }));
+        }
+    };
+    const handleRemoveFile = (fileToRemove) => {
+        setValues((prevValues) => ({
+            ...prevValues,
+            ob_attach: prevValues.ob_attach.filter((file) => file !== fileToRemove),
+        }));
+    };
+
+
     const preview = values.ob_attach && Array.isArray(values.ob_attach) ? (
         values.ob_attach.map((file) => (
             <Box key={file.name} style={{ alignItems: "center" }}>
@@ -226,6 +241,9 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                 <Text truncate style={{ marginTop: '8px', textAlign: 'center' }}>
                     {file.name}
                 </Text>
+                <Button color="red" size="xs" onClick={() => handleRemoveFile(file)}>
+                    <IconTrash />
+                </Button>
             </Box>
 
         ))
@@ -253,7 +271,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
             person_to_meet: selectedOB.person_to_meet,
             ob_purpose: selectedOB.ob_purpose,
             ob_days: values.ob_days,
-            ob_attach: selectedOB.ob_attach,
+            ob_attach: values.ob_attach,
         }
         router.post('/OB_Module/ob_entry/edit', updatedFields, {
             onError: (errors) => {
@@ -513,10 +531,10 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                         </Dropzone>
 
                                         <Box>
-                                            <Text size="sm" weight={500} mb="sm">
-                                            </Text>
                                             <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
-                                                {preview}
+                                                <Zoom>
+                                                    {preview}
+                                                </Zoom>
                                             </SimpleGrid>
                                         </Box>
 
@@ -524,7 +542,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                     </Box>
 
                                 </Box>
-                                <Box style={{ display: "flex", justifyContent: "flex-end", marginRight: 90 }}><Button type="submit"> Submit </Button>
+                                <Box style={{ display: "flex", justifyContent: "flex-end" }}><Button color="teal" type="submit"> Submit </Button>
                                 </Box>
                             </form>
 
@@ -634,12 +652,16 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                             <Text truncate="start">{file}</Text>
 
                                                             {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
-                                                                <Image
-                                                                    w={128}
-                                                                    h={128}
-                                                                    src={`/storage/${file}`}
-                                                                    alt={`Preview of ${file}`}
-                                                                />
+                                                                <Zoom>
+
+                                                                    <Image
+                                                                        w={128}
+                                                                        h={128}
+                                                                        src={`/storage/${file}`}
+                                                                        alt={`Preview of ${file}`}
+                                                                    />
+                                                                </Zoom>
+
                                                             ) : (
                                                                 <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                                                     <Text size="xl" color="dimmed">File</Text>
@@ -805,8 +827,9 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                 />
                                                 <FileInput
                                                     label="Attachment"
-                                                    onChange={(file) => setSelectedOB({ ...selectedOB, ob_attach: file })}
+                                                    onChange={(files) => handleFileChange(files)}
                                                     style={{ marginTop: '1rem' }}
+                                                    multiple
                                                     placeholder={selectedOB.ob_attach}
                                                 />
 
@@ -827,7 +850,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                         </Tabs.Panel>
                         <Tabs.Panel value="obspoiled">
                             <Card>
-                                <Card.Section className="mt-3" style={{ color: "gray" }}>
+                                <Card.Section>
                                     OB Spoiled
                                 </Card.Section>
                                 <Table striped highlightOnHover>

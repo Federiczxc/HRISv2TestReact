@@ -406,19 +406,6 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         return `${year}-${month}-${day}`;
     };
     /* FORMAAAAAAAAAAAAAAAAT */
-
-
-
-
-
-    /* function handleChange(name, value) {
-        setValues((prevValues) => ({
-            ...prevValues,
-            [name]: name === "ut_date" ? new Date(value) : value, // Convert ut_date to Date object
-        }));
-    }
-*/
-
     const openModal = () => modals.openConfirmModal({
         title: 'Please Confirm',
         children: (

@@ -36,6 +36,7 @@ Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUT
 Route::post('/UT_Module/ut_appr_list', [UTController::class, 'updateAll'])->name('update.all');
 Route::post('/UT_Module/ut_appr_list/batch', [UTController::class, 'updateBatch'])->name('update.batch');
 Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])->middleware('auth')->name('utreports.show');
+Route::post('/UT_Module/ut_reports_list', [UTController::class, 'uploadUTReport']);
 
 //OB
 Route::get('/OB_Module/ob_entry/', [OBController::class, 'index'])->middleware('auth');
@@ -46,6 +47,8 @@ Route::post('/OB_Module/ob_entry/{id}', [OBController::class, 'spoilOBRequest'])
 Route::delete('/OB_Module/ob_entry/{id}', [OBController::class, 'deleteOBRequest'])->name('delete.ob');
 Route::get('/OB_Module/ob_appr_list', [OBController::class, 'OBApprList'])->middleware('auth')->name('obapprlist.show');
 Route::post('/OB_Module/ob_appr_list', [OBController::class, 'updateAll'])->name('obupdate.all');
+Route::post('/OB_Module/ob_appr_list/batch', [OBController::class, 'updateBatch'])->name('update.obbatch');
 Route::post('/OB_Module/ob_appr_list/edit', [OBController::class, 'editOBApprRequest']);
 Route::post('/OB_Module/ob_appr_list/edit/{id}', [OBController::class, 'updateOBRequest']);
 Route::get('/OB_Module/ob_reports_list', [OBController::class, 'OBReportsList'])->middleware('auth')->name('obreports.show');
+
