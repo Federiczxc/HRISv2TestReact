@@ -499,7 +499,6 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                 </Flex>
                                 <Flex justify="space-between" align="center">
                                     <MRT_GlobalFilterTextInput table={pendingTable} />
-                                    <MRT_TablePagination table={pendingTable} />
                                 </Flex>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
@@ -546,6 +545,8 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                     </Table.Tbody>
                                 </Table>
                                 <MRT_ToolbarAlertBanner stackAlertBanner table={pendingTable} />
+                                <MRT_TablePagination table={pendingTable} />
+
                             </Stack>
 
                         </Tabs.Panel>
@@ -565,7 +566,6 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                 </Flex>
                                 <Flex justify="space-between" align="center">
                                     <MRT_GlobalFilterTextInput table={updatedTable} />
-                                    <MRT_TablePagination table={updatedTable} />
                                 </Flex>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
@@ -613,6 +613,8 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                     </Table.Tbody>
                                 </Table>
                                 <MRT_ToolbarAlertBanner stackAlertBanner table={updatedTable} />
+                                <MRT_TablePagination table={updatedTable} />
+
                             </Stack>
 
                         </Tabs.Panel>

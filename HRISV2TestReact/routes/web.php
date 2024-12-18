@@ -51,4 +51,5 @@ Route::post('/OB_Module/ob_appr_list/batch', [OBController::class, 'updateBatch'
 Route::post('/OB_Module/ob_appr_list/edit', [OBController::class, 'editOBApprRequest']);
 Route::post('/OB_Module/ob_appr_list/edit/{id}', [OBController::class, 'updateOBRequest']);
 Route::get('/OB_Module/ob_reports_list', [OBController::class, 'OBReportsList'])->middleware('auth')->name('obreports.show');
+Route::post('/OB_Module/ob_reports_list', [OBController::class, 'uploadOBReport']);
 

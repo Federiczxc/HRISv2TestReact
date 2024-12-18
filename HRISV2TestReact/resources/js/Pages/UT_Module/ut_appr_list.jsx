@@ -113,6 +113,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
             accessorKey: 'ut_date',
             header: 'UT Date',
             enableResizing: false,
+            
 
         },
         {
@@ -154,8 +155,8 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         },
         mantinePaginationProps: {
             rowsPerPageOptions: ['5', '10', '15'],
-        },
 
+        },
 
         paginationDisplayMode: 'pages',
     });
@@ -502,7 +503,6 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                 </Flex>
                                 <Flex justify="space-between" align="center">
                                     <MRT_GlobalFilterTextInput table={pendingTable} />
-                                    <MRT_TablePagination table={pendingTable} />
                                 </Flex>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
@@ -549,6 +549,8 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                     </Table.Tbody>
                                 </Table>
                                 <MRT_ToolbarAlertBanner stackAlertBanner table={pendingTable} />
+                                <MRT_TablePagination table={pendingTable} />
+
                             </Stack>
 
                         </Tabs.Panel>
@@ -626,6 +628,8 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                     </Table.Tbody>
                                 </Table>
                                 <MRT_ToolbarAlertBanner stackAlertBanner table={updatedTable} />
+                                <MRT_TablePagination table={updatedTable} />
+
                             </Stack>
 
                         </Tabs.Panel>

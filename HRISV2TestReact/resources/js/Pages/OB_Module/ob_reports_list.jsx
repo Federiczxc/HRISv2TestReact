@@ -15,6 +15,7 @@ import {
     MRT_GlobalFilterTextInput, useMantineReactTable
 } from "mantine-react-table";
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { mkConfig, generateCsv, download } from 'export-to-csv';
 export default function ut_reports_list({ OBReportsList }) {
     const [file, setFile] = useState(null);
@@ -40,13 +41,20 @@ export default function ut_reports_list({ OBReportsList }) {
         },
         {
             accessorKey: 'user.name',
-            header: 'Name',
+            header: 'Employee Name(F',
             grow: true,
             size: 200,
         },
         {
             accessorKey: 'status.mf_status_name',
             header: 'Status',
+            grow: true,
+            size: 150,
+            enableResizing: false,
+        },
+        {
+            accessorKey: 'ob_days',
+            header: 'OB Days',
             grow: true,
             size: 150,
             enableResizing: false,
@@ -121,7 +129,7 @@ export default function ut_reports_list({ OBReportsList }) {
         },
         {
             accessorKey: 'approver_name',
-            header: 'Approved By ',
+            header: 'Approved By',
         },
         {
             accessorKey: 'approved_date',
@@ -179,19 +187,33 @@ export default function ut_reports_list({ OBReportsList }) {
         download(csvConfig)(csv);
     };
     const handleExportTemplate = () => {
-        const visibleColumns = columns.filter(
+        /* const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
-        );
-
-        const columnHeaders = visibleColumns.map((column) => column.header).join(',');
-
+        ); */
+        const fixedColumnHeaders = [
+            'Employee No.',
+            'Employee Name',
+            'Date From',
+            'Time From',
+            'Date To',
+            'Time To',
+            'Destination',
+            'Person To Meet',
+            'Purpose',
+            'Date Filed',
+            'Approved By',
+            'Approved Date',
+        ];
+        /* const columnHeaders = visibleColumns.map((column) => column.header).join(','); */
+        const columnHeaders = fixedColumnHeaders.join(',');
+        const data = [fixedColumnHeaders];
         const csvContent = `${columnHeaders}\n`;
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'UT_Reports_List_Template.csv';
-        link.click();
+        data.push(new Array(fixedColumnHeaders.length).fill(''));
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+        const blob = XLSX.writeFile(workbook, 'OB_Reports_List_Template.xlsx');
+        
     };
     const handleUpload = () => {
         if (file) {
@@ -207,11 +229,31 @@ export default function ut_reports_list({ OBReportsList }) {
 
         }
     };
+
+    /* const handleUpload = () => {
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+            console.log("Parsed Data:", parsedData);
+
+            // Pass parsed data to your handler function
+            handleUploadData(parsedData);
+        };
+
+        reader.readAsArrayBuffer(file); // Works for both .csv and .xlsx
+    }
+}; */
     function handleUploadData(parsedData) {
         const updatedValue = {
             ob_upload: parsedData
         }
-        router.post('/UT_Module/ut_reports_list', updatedValue, {
+        router.post('/OB_Module/ob_reports_list', updatedValue, {
             onError: (errors) => {
                 console.error('Submission Errors:', errors);
                 notifications.show({
@@ -287,7 +329,6 @@ export default function ut_reports_list({ OBReportsList }) {
         initialState: {
             density: 'xs',
             columnVisibility: {
-                created_date: false,
                 first_approver: false,
                 sec_approver: false,
                 approved_date: false,
@@ -337,7 +378,8 @@ export default function ut_reports_list({ OBReportsList }) {
                 leftSection={<IconDownload />}
                 variant="filled"
             >
-                Export All Rows
+                Export All Filtered Data
+
             </Button>
             <Button
                 disabled={table.getRowModel().rows.length === 0}
@@ -346,7 +388,7 @@ export default function ut_reports_list({ OBReportsList }) {
                 leftSection={<IconDownload />}
                 variant="filled"
             >
-                Export Page Rows
+                Export Current Page
             </Button>
             <Button
                 disabled={

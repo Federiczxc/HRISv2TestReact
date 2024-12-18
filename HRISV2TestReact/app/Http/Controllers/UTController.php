@@ -298,26 +298,37 @@ class UTController extends Controller
         $currentUser = Auth::user()->emp_no;
 
         $request->validate([
-            'ob_attach' => 'required|array'
+            'ut_upload' => 'required|array'
         ]);
-        $csvData = $request->input('ob_attach');
+        $csvData = $request->input('ut_upload');
         foreach ($csvData as $row) {
+            $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+            if ($approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv_no) {
+                $errors[] = "The 'Approved By' ({$approved_by->emp_no}) must match either the First Approver ({$employeeName->first_apprv_no}) or Second Approver ({$employeeName->sec_apprv_no}) for Reference No: {$row['Reference No.']}.";
+                continue;
+            }
             UTModel::create([
                 'ut_no' => $row['Reference No.'],
-                'emp_no' => $row['Employee Name'],
-                'ut_status_id' => $row['Status'],
+                'emp_no' => $employeeName->emp_no,
+                'ut_status_id' => 2,
                 'ut_date' => $row['UT Date'],
                 'ut_time' => $row['UT Time'],
                 'ut_reason' => $row['UT Reason'],
-                'first_apprv_no' => $row['First Approver'],
-                'sec_apprv_no' => $row['Second Approver'],
-                'approved_by' => $row['Approved By'],
+                'first_apprv_no' => $employeeName->first_apprv_no,
+                'sec_apprv_no' => $employeeName->sec_apprv2_no,
+                'approved_by' => $approved_by->emp_no,
+                'approved_date' => $row['Approved Date'],
                 'created_by' => $currentUser,
                 'created_date' => Carbon::now(),
                 'updated_by' => $currentUser,
                 'updated_date' => Carbon::now(),
             ]);
         }
+        if (!empty($errors)) {
+            return redirect()->back()->withErrors(['errors' => $errors]);
+        }
+
         return redirect()->intended('/UT_Module/ut_reports_list');
     }
 }

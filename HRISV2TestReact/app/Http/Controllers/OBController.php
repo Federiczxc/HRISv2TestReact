@@ -328,25 +328,34 @@ class OBController extends Controller
         ]);
         $csvData = $request->input('ob_upload');
         foreach ($csvData as $row) {
+            $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+            if ($approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv_no) {
+                $errors[] = "The 'Approved By' ({$approved_by->emp_no}) must match either the First Approver ({$employeeName->first_apprv_no}) or Second Approver ({$employeeName->sec_apprv_no}) for Reference No: {$row['Reference No.']}.";
+                continue;
+            }
             OBModel::create([
-                'ob_no' => $row['Reference No.'],
-                'emp_no' => $row['Employee Name'],
-                'ob_status_id' => $row['Status'],
-                'date_from' => $row['UT Date'],
-                'date_to' => $row['UT Time'],
-                'time_from' => $row['UT Reason'],
-                'time_to' => $row['UT Reason'],
-                'destination' =>$row['Destination'],
-                'person_to_meet' =>$row['Person to meet'],
-                'first_apprv_no' => $row['First Approver'],
-                'sec_apprv_no' => $row['Second Approver'],
-                'approved_by' => $row['Approved By'],
+                'emp_no' => $employeeName->emp_no,
+                'ob_status_id' => 2,
+                'ob_type_id' => 1,
+                'ob_days' => $row['OB Days'],
+                'date_from' => $row['Date From'],
+                'date_to' => $row['Date To'],
+                'time_from' => $row['Time From'],
+                'time_to' => $row['Time To'],
+                'destination' => $row['Destination'],
+                'person_to_meet' => $row['Person To Meet'],
+                'ob_purpose' => $row['Purpose'],
+                'first_apprv_no' => $employeeName->first_apprv_no,
+                'sec_apprv_no' => $employeeName->sec_apprv2_no,
+                'approved_by' => $approved_by->emp_no,
+                'approved_date' => $row['Approved Date'],
                 'created_by' => $currentUser,
                 'created_date' => Carbon::now(),
                 'updated_by' => $currentUser,
                 'updated_date' => Carbon::now(),
             ]);
         }
-        return redirect()->intended('/UT_Module/ut_reports_list');
+        return redirect()->intended('/OB_Module/ob_reports_list');
     }
 }

@@ -39,6 +39,12 @@ export default function ut_reports_list({ UTReportsList }) {
 
         },
         {
+            accessorKey: 'emp_no',
+            header: 'Emp. No.',
+            enableResizing: false,
+
+        },
+        {
             accessorKey: 'user.name',
             header: 'Employee Name',
         },
@@ -143,12 +149,22 @@ export default function ut_reports_list({ UTReportsList }) {
     };
 
     const handleExportTemplate = () => {
-        const visibleColumns = columns.filter(
+       /*  const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
-        );
-
-        const columnHeaders = visibleColumns.map((column) => column.header).join(',');
-
+        ); */
+        const fixedColumnHeaders = [
+            'Reference No.',
+            'Employee Name',
+            'Status',
+            'UT Date',
+            'UT Time',
+            'UT Reason',
+            'Date Filed',
+            'Approved By',
+            'Approved Date',
+        ];
+        /*       const columnHeaders = visibleColumns.map((column) => column.header).join(','); */
+        const columnHeaders = fixedColumnHeaders.join(',');
         const csvContent = `${columnHeaders}\n`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -253,7 +269,7 @@ export default function ut_reports_list({ UTReportsList }) {
                 sec_apprv_name: false,
                 first_apprv_no: false,
                 sec_apprv_no: false,
-                approved_date: false,
+
                 'mrt-row-expand': false,
             }
         },
