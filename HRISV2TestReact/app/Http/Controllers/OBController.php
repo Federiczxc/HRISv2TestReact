@@ -329,29 +329,31 @@ class OBController extends Controller
         $csvData = $request->input('ob_upload');
         foreach ($csvData as $row) {
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+            //validate employee name and emp no
             $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
-            if ($approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv_no) {
-                $errors[] = "The 'Approved By' ({$approved_by->emp_no}) must match either the First Approver ({$employeeName->first_apprv_no}) or Second Approver ({$employeeName->sec_apprv_no}) for Reference No: {$row['Reference No.']}.";
-                continue;
-            }
+            $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
+            $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
+            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+            $obDays = $dateFrom->diffInDays($dateTo);
             OBModel::create([
                 'emp_no' => $employeeName->emp_no,
+                'ob_no' => 'Manual',
                 'ob_status_id' => 2,
                 'ob_type_id' => 1,
-                'ob_days' => $row['OB Days'],
-                'date_from' => $row['Date From'],
-                'date_to' => $row['Date To'],
+                'date_from' => $dateFrom,
+                'date_to' =>  $dateTo,
                 'time_from' => $row['Time From'],
                 'time_to' => $row['Time To'],
+                'ob_days' => $obDays,
                 'destination' => $row['Destination'],
                 'person_to_meet' => $row['Person To Meet'],
                 'ob_purpose' => $row['Purpose'],
                 'first_apprv_no' => $employeeName->first_apprv_no,
                 'sec_apprv_no' => $employeeName->sec_apprv2_no,
                 'approved_by' => $approved_by->emp_no,
-                'approved_date' => $row['Approved Date'],
+                'approved_date' => $approvedDate,
                 'created_by' => $currentUser,
-                'created_date' => Carbon::now(),
+                'created_date' => $row['Date Filed'],
                 'updated_by' => $currentUser,
                 'updated_date' => Carbon::now(),
             ]);

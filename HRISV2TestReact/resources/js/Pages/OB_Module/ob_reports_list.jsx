@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
-import { ActionIcon, Flex, FileInput, Box, Button, Modal } from '@mantine/core';
+import { ActionIcon, Flex, FileInput, Box, Button, Pagination, Modal, Table } from '@mantine/core';
 import dayjs from 'dayjs';
 import { router } from '@inertiajs/react'
 import { IconClock, IconDownload, IconFileExport, IconFileImport } from '@tabler/icons-react';
@@ -14,12 +14,13 @@ import {
     MantineReactTable,
     MRT_GlobalFilterTextInput, useMantineReactTable
 } from "mantine-react-table";
-import Papa from 'papaparse';
+/* import Papa from 'papaparse'; */
 import * as XLSX from 'xlsx';
-import { mkConfig, generateCsv, download } from 'export-to-csv';
-export default function ut_reports_list({ OBReportsList }) {
+/* import { mkConfig, generateCsv, download } from 'export-to-csv'; */
+export default function ob_reports_list({ OBReportsList }) {
     const [file, setFile] = useState(null);
     const [opened, setOpened] = useState(false);
+    const [previewFile, setPreviewFile] = useState([]);
     const open = () => setOpened(true);
     const close = () => setOpened(false);
     const data = OBReportsList
@@ -32,6 +33,14 @@ export default function ut_reports_list({ OBReportsList }) {
         const period = isPM ? 'PM' : 'AM';
         return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
     };
+    const [activePage, setActivePage] = useState(1);
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(previewFile.length / itemsPerPage);
+    const paginatedData = previewFile.slice(
+        (activePage - 1) * itemsPerPage,
+        activePage * itemsPerPage
+    );
+
     const columns = [
         {
             accessorKey: 'ob_no',
@@ -41,7 +50,7 @@ export default function ut_reports_list({ OBReportsList }) {
         },
         {
             accessorKey: 'user.name',
-            header: 'Employee Name(F',
+            header: 'Employee Name',
             grow: true,
             size: 200,
         },
@@ -140,16 +149,55 @@ export default function ut_reports_list({ OBReportsList }) {
         },
 
     ];
-    const csvConfig = mkConfig({
+    /* const csvConfig = mkConfig({
         fieldSeparator: ',',
         decimalSeparaator: '.',
         useKeysAsHeaders: true,
         filename: 'OB_Reports_List',
 
-    })
+    }) */
+    const handleExportData = () => { //EXPORT ALL DATAA
+        const visibleColumns = columns.filter(
+            (column) => table.getState().columnVisibility[column.accessorKey] !== false
+        );
 
+        const mappedData = data.map((row) => {
+            const mappedRow = {};
 
-    const handleExportRows = (rows) => {
+            visibleColumns.forEach((column) => {
+                let value = row[column.accessorKey];
+
+                if (column.accessorKey === 'user.name') {
+                    value = row.user?.name;
+                } else if (column.accessorKey === 'status.mf_status_name') {
+                    value = row.status?.mf_status_name;
+                } else if (column.accessorKey === 'time_from') {
+                    value = formatTime(value.split('.')[0]);
+                }
+                else if (column.accessorKey === 'time_to') {
+                    value = formatTime(value.split('.')[0]);
+                } else if (
+                    column.accessorKey === 'created_date' ||
+                    column.accessorKey === 'approved_date'
+                ) {
+                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
+                }
+
+                mappedRow[column.header] = value;
+            });
+
+            return mappedRow;
+        });
+
+        /*   const csv = generateCsv(csvConfig)(mappedData);  CSV Format
+          download(csvConfig)(csv); */
+        const worksheet = XLSX.utils.json_to_sheet(mappedData); //extractata data
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
+        XLSX.writeFile(workbook, "OB_Reports_List.xls");
+    };
+
+    const handleExportRows = (rows) => { //FILTERED EXPORT
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
         );
@@ -183,8 +231,13 @@ export default function ut_reports_list({ OBReportsList }) {
             return mappedRow;
         });
 
-        const csv = generateCsv(csvConfig)(rowData);
-        download(csvConfig)(csv);
+        /* const csv = generateCsv(csvConfig)(rowData);
+        download(csvConfig)(csv); */
+
+        const worksheet = XLSX.utils.json_to_sheet(rowData); //extractata data
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
+        XLSX.writeFile(workbook, "OB_Reports_List.xls")
     };
     const handleExportTemplate = () => {
         /* const visibleColumns = columns.filter(
@@ -205,17 +258,16 @@ export default function ut_reports_list({ OBReportsList }) {
             'Approved Date',
         ];
         /* const columnHeaders = visibleColumns.map((column) => column.header).join(','); */
-        const columnHeaders = fixedColumnHeaders.join(',');
+        /*  const columnHeaders = fixedColumnHeaders.join(','); */
         const data = [fixedColumnHeaders];
-        const csvContent = `${columnHeaders}\n`;
         data.push(new Array(fixedColumnHeaders.length).fill(''));
         const worksheet = XLSX.utils.aoa_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-        const blob = XLSX.writeFile(workbook, 'OB_Reports_List_Template.xlsx');
-        
+        XLSX.writeFile(workbook, 'OB_Reports_List_Template.xls');
+
     };
-    const handleUpload = () => {
+    /* const handleUpload = () => {
         if (file) {
             Papa.parse(file, {
                 complete: (result) => {
@@ -229,30 +281,77 @@ export default function ut_reports_list({ OBReportsList }) {
 
         }
     };
+ */
 
-    /* const handleUpload = () => {
-    if (file) {
-        const reader = new FileReader();
+    const handleFilePreview = (file) => {
+        setFile(file);
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
 
-        reader.onload = (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-            console.log("Parsed Data:", parsedData);
 
-            // Pass parsed data to your handler function
-            handleUploadData(parsedData);
-        };
-
-        reader.readAsArrayBuffer(file); // Works for both .csv and .xlsx
-    }
-}; */
-    function handleUploadData(parsedData) {
-        const updatedValue = {
-            ob_upload: parsedData
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
+                const formattedData = parsedData.map((row) => {
+                    const formattedRow = {};
+                    for (const [key, value] of Object.entries(row)) {
+                        formattedRow[key] = formatCell(value); // Apply formatting logic
+                    }
+                    return formattedRow;
+                });
+                console.log("Silip data:", parsedData);
+                setPreviewFile(parsedData);
+            }
+            reader.readAsArrayBuffer(file);
         }
+    }
+    const handleUpload = () => {
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+
+
+
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
+
+                console.log("Parsed Data:", parsedData);
+
+                // Pass parsed data to your handler function
+                handleUploadData(parsedData);
+            };
+
+            reader.readAsArrayBuffer(file); // Works for both .csv and .xlsx
+        }
+    };
+
+    const formatCell = (cell) => {
+        if (cell instanceof Date) {
+            if (cell.getFullYear() === 1899 && (cell.getMonth() === 11 && (cell.getDate() === 30 || cell.getDate() === 31))) {
+                console.log("workinjg?");
+                return dayjs(cell).format('hh:mm A');
+            }
+            return dayjs(cell).format('YYYY-MM-DD');
+        }
+
+        return cell;
+    }
+    function handleUploadData(parsedData) {
+        const updatedData = parsedData.map((row) => {
+            return {
+                ...row,
+                'Time From': formatCell(row['Time From']), // Format to 12-hour
+                'Time To': formatCell(row['Time To']),     // Format to 12-hour
+            };
+        });
+
+        const updatedValue = { ob_upload: updatedData };
         router.post('/OB_Module/ob_reports_list', updatedValue, {
             onError: (errors) => {
                 console.error('Submission Errors:', errors);
@@ -273,47 +372,14 @@ export default function ut_reports_list({ OBReportsList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                setFile(null);
+                setPreviewFile([]);
                 close();
 
             },
         })
     }
-    const handleExportData = () => {
-        const visibleColumns = columns.filter(
-            (column) => table.getState().columnVisibility[column.accessorKey] !== false
-        );
 
-        const mappedData = data.map((row) => {
-            const mappedRow = {};
-
-            visibleColumns.forEach((column) => {
-                let value = row[column.accessorKey];
-
-                if (column.accessorKey === 'user.name') {
-                    value = row.user?.name;
-                } else if (column.accessorKey === 'status.mf_status_name') {
-                    value = row.status?.mf_status_name;
-                } else if (column.accessorKey === 'time_from') {
-                    value = formatTime(value.split('.')[0]);
-                }
-                else if (column.accessorKey === 'time_to') {
-                    value = formatTime(value.split('.')[0]);
-                } else if (
-                    column.accessorKey === 'created_date' ||
-                    column.accessorKey === 'approved_date'
-                ) {
-                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
-                }
-
-                mappedRow[column.header] = value;
-            });
-
-            return mappedRow;
-        });
-
-        const csv = generateCsv(csvConfig)(mappedData);
-        download(csvConfig)(csv);
-    };
 
 
 
@@ -416,19 +482,41 @@ export default function ut_reports_list({ OBReportsList }) {
                 leftSection={<IconFileImport />}
                 variant="filled"
             >
-                Import CSV
+                Import XLS
             </Button>
             <MantineReactTable table={table} />
-            <Modal opened={opened} onClose={close} title="Import">
+            <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import OB Reports">
                 <FileInput
                     label="Upload Template"
-                    placeholder="Choose a CSV file"
-                    accept=".csv"
+                    placeholder="Choose .xls"
+                    accept=".xls"
                     value={file}
-                    onChange={setFile}
+                    onChange={handleFilePreview}
                     id="file-upload"
                 />
-                <Button onClick={handleUpload}>
+                {previewFile.length > 0 && (
+                    <Table striped>
+                        <Table.Thead>
+                            {Object.keys(previewFile[0]).map((header, index) => (
+                                <Table.Th key={index}>{header}</Table.Th>
+                            ))}
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {paginatedData.map((row, rowIndex) => (
+                                <Table.Tr key={rowIndex}>
+                                    {Object.values(row).map((cell, cellIndex) => (
+                                        <Table.Td key={cellIndex}>{formatCell(cell)}</Table.Td>
+                                    ))}
+                                </Table.Tr>
+                            ))}
+
+                        </Table.Tbody>
+                    </Table>
+
+                )}
+
+                <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+                <Button color="lime.4" onClick={handleUpload}>
                     Upload and Process
                 </Button>
             </Modal>

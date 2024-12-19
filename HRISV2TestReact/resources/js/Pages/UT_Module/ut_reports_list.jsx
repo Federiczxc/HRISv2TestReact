@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
-import { ActionIcon, Flex, FileInput, Box, Button, Modal } from '@mantine/core';
+import { ActionIcon, Flex, FileInput, Box, Pagination, Button, Table, Alert, Modal } from '@mantine/core';
 import dayjs from 'dayjs';
 import { router } from '@inertiajs/react'
-import { IconClock, IconDownload, IconFileExport, IconFileImport } from '@tabler/icons-react';
+import { IconClock, IconDownload, IconFileExport, IconFileImport, IconSettingsOff } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import {
     MRT_ShowHideColumnsButton,
@@ -14,11 +14,13 @@ import {
     MantineReactTable,
     MRT_GlobalFilterTextInput, useMantineReactTable
 } from "mantine-react-table";
-import Papa from 'papaparse';
-import { mkConfig, generateCsv, download } from 'export-to-csv';
+/* import Papa from 'papaparse'; */
+import * as XLSX from 'xlsx';
+/* import { mkConfig, generateCsv, download } from 'export-to-csv'; */
 export default function ut_reports_list({ UTReportsList }) {
     const [file, setFile] = useState(null);
     const [opened, setOpened] = useState(false);
+    const [previewFile, setPreviewFile] = useState([]);
     const open = () => setOpened(true);
     const close = () => setOpened(false);
     const data = UTReportsList
@@ -31,6 +33,13 @@ export default function ut_reports_list({ UTReportsList }) {
         const period = isPM ? 'PM' : 'AM';
         return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
     };
+    const [activePage, setActivePage] = useState(1);
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(previewFile.length / itemsPerPage);
+    const paginatedData = previewFile.slice(
+        (activePage - 1) * itemsPerPage,
+        activePage * itemsPerPage
+    );
     const columns = [
         {
             accessorKey: 'ut_no',
@@ -105,14 +114,50 @@ export default function ut_reports_list({ UTReportsList }) {
         },
 
     ];
-    const csvConfig = mkConfig({
+    /* const csvConfig = mkConfig({
         fieldSeparator: ',',
         decimalSeparaator: '.',
         useKeysAsHeaders: true,
         filename: 'UT_Reports_List',
 
-    })
+    }) */
+    const handleExportData = () => {
+        const visibleColumns = columns.filter(
+            (column) => table.getState().columnVisibility[column.accessorKey] !== false
+        );
 
+        const mappedData = data.map((row) => {
+            const mappedRow = {};
+
+            visibleColumns.forEach((column) => {
+                let value = row[column.accessorKey];
+
+                if (column.accessorKey === 'user.name') {
+                    value = row.user?.name;
+                } else if (column.accessorKey === 'status.mf_status_name') {
+                    value = row.status?.mf_status_name;
+                } else if (column.accessorKey === 'ut_time') {
+                    value = formatTime(value.split('.')[0]);
+                } else if (
+                    column.accessorKey === 'created_date' ||
+                    column.accessorKey === 'approved_date'
+                ) {
+                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
+                }
+
+                mappedRow[column.header] = value;
+            });
+
+            return mappedRow;
+        });
+
+        /* const csv = generateCsv(csvConfig)(mappedData);
+        download(csvConfig)(csv); */
+        const worksheet = XLSX.utils.json_to_sheet(mappedData); //extractata data
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
+        XLSX.writeFile(workbook, "UT_Reports_List.xls");
+    };
     const handleExportRows = (rows) => {
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
@@ -144,18 +189,21 @@ export default function ut_reports_list({ UTReportsList }) {
             return mappedRow;
         });
 
-        const csv = generateCsv(csvConfig)(rowData);
-        download(csvConfig)(csv);
+        /* const csv = generateCsv(csvConfig)(rowData);
+        download(csvConfig)(csv); */
+        const worksheet = XLSX.utils.json_to_sheet(rowData); //extractata data
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
+        XLSX.writeFile(workbook, "UT_Reports_List.xls")
     };
 
     const handleExportTemplate = () => {
-       /*  const visibleColumns = columns.filter(
-            (column) => table.getState().columnVisibility[column.accessorKey] !== false
-        ); */
+        /*  const visibleColumns = columns.filter(
+             (column) => table.getState().columnVisibility[column.accessorKey] !== false
+         ); */
         const fixedColumnHeaders = [
-            'Reference No.',
+            'Employee No.',
             'Employee Name',
-            'Status',
             'UT Date',
             'UT Time',
             'UT Reason',
@@ -164,16 +212,73 @@ export default function ut_reports_list({ UTReportsList }) {
             'Approved Date',
         ];
         /*       const columnHeaders = visibleColumns.map((column) => column.header).join(','); */
-        const columnHeaders = fixedColumnHeaders.join(',');
-        const csvContent = `${columnHeaders}\n`;
+        /*   const columnHeaders = fixedColumnHeaders.join(','); */
+        /*  const csvContent = `${columnHeaders}\n`;
+  */
+        /*  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+         const link = document.createElement('a');
+         link.href = URL.createObjectURL(blob);
+         link.download = 'UT_Reports_List_Template.csv';
+         link.click(); */
+        const data = [fixedColumnHeaders];
+        data.push(new Array(fixedColumnHeaders.length).fill(''));
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+        XLSX.writeFile(workbook, 'UT_Reports_List_Template.xls');
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'UT_Reports_List_Template.csv';
-        link.click();
+
     };
+    const handleFilePreview = (file) => {
+        setFile(file);
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+
+
+
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
+                const formattedData = parsedData.map((row) => {
+                    const formattedRow = {};
+                    for (const [key, value] of Object.entries(row)) {
+                        formattedRow[key] = formatCell(value); // Apply formatting logic
+                    }
+                    return formattedRow;
+                });
+                console.log("Silip data:", parsedData);
+                setPreviewFile(parsedData);
+            }
+            reader.readAsArrayBuffer(file);
+        }
+    }
+
     const handleUpload = () => {
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+
+
+
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
+
+                console.log("Parsed Data:", parsedData);
+
+                // Pass parsed data to your handler function
+                handleUploadData(parsedData);
+            };
+
+            reader.readAsArrayBuffer(file); // Works for both .csv and .xlsx
+        }
+    };
+
+    /* const handleUpload = () => {
         if (file) {
             Papa.parse(file, {
                 complete: (result) => {
@@ -186,21 +291,58 @@ export default function ut_reports_list({ UTReportsList }) {
             })
 
         }
-    };
-    function handleUploadData(parsedData) {
-        const updatedValue = {
-            ut_upload: parsedData
+    }; */
+    const formatCell = (cell) => {
+        if (cell instanceof Date) {
+            if (cell.getFullYear() === 1899 && (cell.getMonth() === 11 && (cell.getDate() === 30 || cell.getDate() === 31))) {
+                return dayjs(cell).format('hh:mm A');
+            }
+            return dayjs(cell).format('YYYY-MM-DD');
         }
+
+        return cell;
+    }
+    const [errors, setErrors] = useState([]);
+
+    function handleUploadData(parsedData) {
+        const updatedData = parsedData.map((row) => {
+            return {
+                ...row,
+                'UT Time': formatCell(row['UT Time']),
+            };
+        });
+
+        const updatedValue = { ut_upload: updatedData };
         router.post('/UT_Module/ut_reports_list', updatedValue, {
-            onError: (errors) => {
-                console.error('Submission Errors:', errors);
+            onError: (errorResponse) => {
+                const errors = errorResponse.errors || [];
+                const errorMessages = [];
+                console.log("puke", errors);
+
+                if (Array.isArray(errors)) {
+                    errors.forEach((error) => {
+                        errorMessages.push(error);
+                        console.error("error", error);
+                        console.error("errors", errors);
+
+                    });
+                }
+                if (errorMessages.length > 0) {
+                    setErrors(errorMessages);
+                    console.log("tite", errorMessages);
+
+                }
+                else {
+                    setErrors(['TITE', errors]);
+                }
                 notifications.show({
                     title: 'Error',
-                    message: 'Failed to submit your request. Please try again.',
+                    message: errorResponse.errors,
                     color: 'red',
                     position: 'top-center',
                     autoClose: 5000,
                 });
+
             },
             onSuccess: () => {
                 console.log('Form submitted successfully');
@@ -211,44 +353,13 @@ export default function ut_reports_list({ UTReportsList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                setFile(null);
+                setPreviewFile([]);
                 close();
-
             },
         })
     }
-    const handleExportData = () => {
-        const visibleColumns = columns.filter(
-            (column) => table.getState().columnVisibility[column.accessorKey] !== false
-        );
 
-        const mappedData = data.map((row) => {
-            const mappedRow = {};
-
-            visibleColumns.forEach((column) => {
-                let value = row[column.accessorKey];
-
-                if (column.accessorKey === 'user.name') {
-                    value = row.user?.name;
-                } else if (column.accessorKey === 'status.mf_status_name') {
-                    value = row.status?.mf_status_name;
-                } else if (column.accessorKey === 'ut_time') {
-                    value = formatTime(value.split('.')[0]);
-                } else if (
-                    column.accessorKey === 'created_date' ||
-                    column.accessorKey === 'approved_date'
-                ) {
-                    value = dayjs(value).format('YYYY-MM-DD'); // Format date
-                }
-
-                mappedRow[column.header] = value;
-            });
-
-            return mappedRow;
-        });
-
-        const csv = generateCsv(csvConfig)(mappedData);
-        download(csvConfig)(csv);
-    };
 
 
 
@@ -357,23 +468,55 @@ export default function ut_reports_list({ UTReportsList }) {
                 leftSection={<IconFileImport />}
                 variant="filled"
             >
-                Import CSV
+                Import XLS
             </Button>
 
 
             <MantineReactTable table={table} />
 
 
-            <Modal opened={opened} onClose={close} title="Import">
+            <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import">
+                {errors.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        {errors.map((error, index) => (
+                            <Alert key={index} title="Error" color="red" variant="filled">
+                                {error}
+                            </Alert>
+                        ))}
+                    </div>
+                )}
                 <FileInput
                     label="Upload Template"
-                    placeholder="Choose a CSV file"
-                    accept=".csv"
+                    placeholder="Choose .xls"
+                    accept=".xls"
                     value={file}
-                    onChange={setFile}
+                    onChange={handleFilePreview}
                     id="file-upload"
                 />
-                <Button onClick={handleUpload}>
+
+                {previewFile.length > 0 && (
+                    <Table striped>
+                        <Table.Thead>
+                            {Object.keys(previewFile[0]).map((header, index) => (
+                                <Table.Th key={index}>{header}</Table.Th>
+                            ))}
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {paginatedData.map((row, rowIndex) => (
+                                <Table.Tr key={rowIndex}>
+                                    {Object.values(row).map((cell, cellIndex) => (
+                                        <Table.Td key={cellIndex}>{formatCell(cell)}</Table.Td>
+                                    ))}
+                                </Table.Tr>
+                            ))}
+
+                        </Table.Tbody>
+                    </Table>
+
+                )}
+
+                <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
+                <Button color="lime" onClick={handleUpload}>
                     Upload and Process
                 </Button>
             </Modal>
