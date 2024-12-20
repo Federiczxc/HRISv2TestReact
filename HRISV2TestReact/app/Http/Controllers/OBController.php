@@ -327,9 +327,49 @@ class OBController extends Controller
             'ob_upload' => 'required|array'
         ]);
         $csvData = $request->input('ob_upload');
-        foreach ($csvData as $row) {
+        $errors = [];
+        foreach ($csvData as $index => $row) {
+            $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+            $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
+            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+            $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
+            $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
+            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+            $obDays = $dateFrom->diffInDays($dateTo);
+            if (!$employeeNo) {
+                $errors[] = "$index Employee No '{$row['Employee No.']}' not found in the database.";
+            }
+
+            if (!$employeeName) {
+                $errors[] = "$index Employee Name '{$row['Employee Name']}' not found in the database.";
+            }
+
+            if ($employeeNo && $employeeName && $employeeNo->name !== $row['Employee Name']) {
+                $errors[] = "$index Employee No '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'";
+            }
+            if ($approved_by) {
+
+                if ($employeeName && $approved_by->name !== $employeeName->first_apprv_name && $approved_by->name !== $employeeName->sec_apprv2_name) {
+                    $errors[] = "$index '{$row['Approved By']}' is not the approver for Employee '{$row['Employee Name']}'";
+                }
+                if ($employeeName && $approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv2_no) {
+                    $errors[] = "$index '{$row['Approved By']}' does not match the first or second appr's emp_no for Employee '{$row['Employee Name']}'";
+                }
+                if ($approved_by->is_approver == 0) {
+                    $errors[] = "$index '{$row['Approved By']}' is not set as an approver";
+                }
+            }
+            if (!$approved_by) {
+                $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
+            }
+            if (!empty($errors)) {
+                return response()->json(['errorWarning' => $errors], 422);
+            }
+        }
+        foreach ($csvData as $index => $row) {
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
             //validate employee name and emp no
+            $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
             $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
             $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
             $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
@@ -358,6 +398,7 @@ class OBController extends Controller
                 'updated_date' => Carbon::now(),
             ]);
         }
-        return redirect()->intended('/OB_Module/ob_reports_list');
+        return response()->json(['message' => 'Entry Successful']);
+
     }
 }

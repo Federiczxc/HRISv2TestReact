@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import { ActionIcon, Flex, FileInput, Box, Button, Pagination, Modal, Table } from '@mantine/core';
 import dayjs from 'dayjs';
-import { router } from '@inertiajs/react'
+import { router, usePage } from '@inertiajs/react'
 import { IconClock, IconDownload, IconFileExport, IconFileImport } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import {
@@ -16,6 +16,7 @@ import {
 } from "mantine-react-table";
 /* import Papa from 'papaparse'; */
 import * as XLSX from 'xlsx';
+import { parse } from "papaparse";
 /* import { mkConfig, generateCsv, download } from 'export-to-csv'; */
 export default function ob_reports_list({ OBReportsList }) {
     const [file, setFile] = useState(null);
@@ -33,6 +34,8 @@ export default function ob_reports_list({ OBReportsList }) {
         const period = isPM ? 'PM' : 'AM';
         return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
     };
+    const { errorWarning } = usePage().props;
+
     const [activePage, setActivePage] = useState(1);
     const itemsPerPage = 5;
     const totalPages = Math.ceil(previewFile.length / itemsPerPage);
@@ -302,7 +305,6 @@ export default function ob_reports_list({ OBReportsList }) {
                     }
                     return formattedRow;
                 });
-                console.log("Silip data:", parsedData);
                 setPreviewFile(parsedData);
             }
             reader.readAsArrayBuffer(file);
@@ -334,7 +336,6 @@ export default function ob_reports_list({ OBReportsList }) {
     const formatCell = (cell) => {
         if (cell instanceof Date) {
             if (cell.getFullYear() === 1899 && (cell.getMonth() === 11 && (cell.getDate() === 30 || cell.getDate() === 31))) {
-                console.log("workinjg?");
                 return dayjs(cell).format('hh:mm A');
             }
             return dayjs(cell).format('YYYY-MM-DD');
@@ -342,6 +343,8 @@ export default function ob_reports_list({ OBReportsList }) {
 
         return cell;
     }
+    const [errorMessage, setErrorMessage] = useState(null);
+
     function handleUploadData(parsedData) {
         const updatedData = parsedData.map((row) => {
             return {
@@ -350,34 +353,52 @@ export default function ob_reports_list({ OBReportsList }) {
                 'Time To': formatCell(row['Time To']),     // Format to 12-hour
             };
         });
-
+        console.log("hud", parsedData);
         const updatedValue = { ob_upload: updatedData };
-        router.post('/OB_Module/ob_reports_list', updatedValue, {
-            onError: (errors) => {
-                console.error('Submission Errors:', errors);
-                notifications.show({
-                    title: 'Error',
-                    message: 'Failed to submit your request. Please try again.',
-                    color: 'red',
-                    position: 'top-center',
-                    autoClose: 5000,
-                });
-            },
-            onSuccess: () => {
-                console.log('Form submitted successfully');
+        axios.post('/OB_Module/ob_reports_list', updatedValue) //inertia wont work
+            .then((response) => {
                 notifications.show({
                     title: 'Success',
-                    message: 'Entry Successful.',
+                    message: 'Your data has been uploaded successfully!',
                     color: 'green',
                     position: 'top-center',
                     autoClose: 5000,
                 });
+
                 setFile(null);
                 setPreviewFile([]);
+                router.visit('/OB_Module/ob_reports_list', { //USE THIS SHIT IF AXIOS GAMIT no need usestate
+                    only: ['OBReportsList'],
+                })
                 close();
+            })
+            .catch((error) => {
+                if (error.response && error.response.data.errorWarning) {
+                    const errors = error.response.data.errorWarning;
+                    setErrorMessage(errors); // Update the error state
+                    const errorList = errors.map((error, index) => (
+                        <div key={index}>
+                            Row: {error}
+                        </div>
+                    ));
+                    notifications.show({
+                        title: 'Error',
+                        message: <> {errorList}</>,  // Display error messages
+                        color: 'red',
+                        position: 'top-right',
+                        autoClose: false,
+                    });
+                } else {
+                    notifications.show({
+                        title: 'Error',
+                        message: error,
+                        color: 'red',
+                        position: 'top-center',
+                        autoClose: 5000,
+                    });
+                }
 
-            },
-        })
+            });
     }
 
 

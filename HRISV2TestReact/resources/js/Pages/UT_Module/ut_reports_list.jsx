@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
-import { ActionIcon, Flex, FileInput, Box, Pagination, Button, Table, Alert, Modal } from '@mantine/core';
+import { ActionIcon, Flex, Container, FileInput, Box, Pagination, Button, Table, Alert, Modal } from '@mantine/core';
 import dayjs from 'dayjs';
-import { router } from '@inertiajs/react'
+import { router, usePage } from '@inertiajs/react'
 import { IconClock, IconDownload, IconFileExport, IconFileImport, IconSettingsOff } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import {
@@ -16,6 +16,7 @@ import {
 } from "mantine-react-table";
 /* import Papa from 'papaparse'; */
 import * as XLSX from 'xlsx';
+import { Inertia } from "@inertiajs/inertia";
 /* import { mkConfig, generateCsv, download } from 'export-to-csv'; */
 export default function ut_reports_list({ UTReportsList }) {
     const [file, setFile] = useState(null);
@@ -33,6 +34,8 @@ export default function ut_reports_list({ UTReportsList }) {
         const period = isPM ? 'PM' : 'AM';
         return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
     };
+    const { errorWarning } = usePage().props;
+
     const [activePage, setActivePage] = useState(1);
     const itemsPerPage = 5;
     const totalPages = Math.ceil(previewFile.length / itemsPerPage);
@@ -248,7 +251,6 @@ export default function ut_reports_list({ UTReportsList }) {
                     }
                     return formattedRow;
                 });
-                console.log("Silip data:", parsedData);
                 setPreviewFile(parsedData);
             }
             reader.readAsArrayBuffer(file);
@@ -302,7 +304,7 @@ export default function ut_reports_list({ UTReportsList }) {
 
         return cell;
     }
-    const [errors, setErrors] = useState([]);
+    const [errorMessage, setErrorMessage] = useState(null);
 
     function handleUploadData(parsedData) {
         const updatedData = parsedData.map((row) => {
@@ -313,55 +315,52 @@ export default function ut_reports_list({ UTReportsList }) {
         });
 
         const updatedValue = { ut_upload: updatedData };
-        router.post('/UT_Module/ut_reports_list', updatedValue, {
-            onError: (errorResponse) => {
-                const errors = errorResponse.errors || [];
-                const errorMessages = [];
-                console.log("puke", errors);
 
-                if (Array.isArray(errors)) {
-                    errors.forEach((error) => {
-                        errorMessages.push(error);
-                        console.error("error", error);
-                        console.error("errors", errors);
-
-                    });
-                }
-                if (errorMessages.length > 0) {
-                    setErrors(errorMessages);
-                    console.log("tite", errorMessages);
-
-                }
-                else {
-                    setErrors(['TITE', errors]);
-                }
-                notifications.show({
-                    title: 'Error',
-                    message: errorResponse.errors,
-                    color: 'red',
-                    position: 'top-center',
-                    autoClose: 5000,
-                });
-
-            },
-            onSuccess: () => {
-                console.log('Form submitted successfully');
+        axios.post('/UT_Module/ut_reports_list', updatedValue) //inertia wont work
+            .then((response) => {
                 notifications.show({
                     title: 'Success',
-                    message: 'Entry Successful.',
+                    message: 'Your data has been uploaded successfully!',
                     color: 'green',
                     position: 'top-center',
                     autoClose: 5000,
                 });
+
                 setFile(null);
                 setPreviewFile([]);
+                router.visit('/UT_Module/ut_reports_list', { //USE THIS SHIT IF AXIOS GAMIT no need usestate
+                    only: ['UTReportsList'],
+                })
                 close();
-            },
-        })
+            })
+            .catch((error) => {
+                if (error.response && error.response.data.errorWarning) {
+                    const errors = error.response.data.errorWarning;
+                    setErrorMessage(errors); // Update the error state
+                    const errorList = errors.map((error, index) => (
+                        <div key={index}>
+                          Row: {error}
+                        </div>
+                    ));
+                    notifications.show({
+                        title: 'Error',
+                        message: <> {errorList}</>,  // Display error messages
+                        color: 'red',
+                        position: 'top-right',
+                        autoClose: false,
+                    });
+                } else {
+                    notifications.show({
+                        title: 'Error',
+                        message: error,
+                        color: 'red',
+                        position: 'top-center',
+                        autoClose: 5000,
+                    });
+                }
+
+            });
     }
-
-
-
 
     const table = useMantineReactTable({
         columns,
@@ -476,14 +475,14 @@ export default function ut_reports_list({ UTReportsList }) {
 
 
             <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import">
-                {errors.length > 0 && (
-                    <div style={{ marginBottom: '1rem' }}>
-                        {errors.map((error, index) => (
-                            <Alert key={index} title="Error" color="red" variant="filled">
+                {errorWarning && errorWarning.length > 0 && (
+                    <Container>
+                        {errorWarning.map((error, index) => (
+                            <Alert key={index} className="error-item">
                                 {error}
                             </Alert>
                         ))}
-                    </div>
+                    </Container>
                 )}
                 <FileInput
                     label="Upload Template"
@@ -496,11 +495,9 @@ export default function ut_reports_list({ UTReportsList }) {
 
                 {previewFile.length > 0 && (
                     <Table striped>
-                        <Table.Thead>
-                            {Object.keys(previewFile[0]).map((header, index) => (
-                                <Table.Th key={index}>{header}</Table.Th>
-                            ))}
-                        </Table.Thead>
+                        {Object.keys(previewFile[0]).map((header, index) => (
+                            <Table.Th key={index}>{header}</Table.Th>
+                        ))}
                         <Table.Tbody>
                             {paginatedData.map((row, rowIndex) => (
                                 <Table.Tr key={rowIndex}>

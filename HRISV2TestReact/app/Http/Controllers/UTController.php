@@ -302,36 +302,52 @@ class UTController extends Controller
         ]);
         $csvData = $request->input('ut_upload');
         $errors = [];
+        
         foreach ($csvData as $index => $row) {
+            $index = $index + 1;
             $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
             $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
             $utDate = Carbon::parse($row['UT Date'])->setTimezone('Asia/Manila');
             $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
             if (!$employeeNo) {
-                $errors[] = "Row {$index}: Employee No '{$row['Employee No.']}' not found in the database.";
-                continue;
+                $errors[] = "$index emp_no '{$row['Employee No.']}' not found in the database.";
             }
 
             if (!$employeeName) {
-                $errors[] = "Row {$index}: Employee Name '{$row['Employee Name']}' not found in the database.";
-                continue;
+                $errors[] = "$index emp_name '{$row['Employee Name']}' not found in the database.";
             }
-
-            if ($employeeNo->name !== $row['Employee Name']) {
-                $errors[] = "Row {$index}: Employee No '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'.";
-                continue;
+            if ($employeeNo && $employeeName && $employeeNo->name !== $row['Employee Name']) {
+                $errors[] = "$index emp_no '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'";
+            }
+            if ($approved_by) {
+                
+                if ($employeeName && $approved_by->name !== $employeeName->first_apprv_name && $approved_by->name !== $employeeName->sec_apprv2_name) {
+                    $errors[] = "$index '{$row['Approved By']}' is not the approver for Employee '{$row['Employee Name']}'";
+                }
+                if ($employeeName && $approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv2_no) {
+                    $errors[] = "$index '{$row['Approved By']}' does not match the first or second appr's emp_no for Employee '{$row['Employee Name']}'";
+                }
+                if ($approved_by->is_approver == 0){
+                    $errors[] = "$index '{$row['Approved By']}' is not set as an approver";
+                }
+                
+            }
+            if (!$approved_by){
+                $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
             }
         }
-        /*         dd('./.', $errors);
- */
+
         if (!empty($errors)) {
-            return redirect()->back()->withErrors(['errors' => $errors]);
-            /*   return response()->json(['errors' => $errors], 422); */
-            
+            return response()->json(['errorWarning' => $errors], 422);
         }
 
         foreach ($csvData as $index => $row) {
+            $employeeName = User::where('emp_no', $row['Employee No.'])->first();
+            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+            $utDate = Carbon::parse($row['UT Date'])->setTimezone('Asia/Manila');
+            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+
             UTModel::create([
                 'ut_no' => 'Manual',
                 'emp_no' => $employeeName->emp_no,
@@ -350,6 +366,6 @@ class UTController extends Controller
             ]);
         }
 
-        return redirect()->intended('/UT_Module/ut_reports_list');
+        return response()->json(['message' => 'Entry Successful']);
     }
 }
