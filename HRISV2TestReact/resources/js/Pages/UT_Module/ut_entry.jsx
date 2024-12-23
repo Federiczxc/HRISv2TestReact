@@ -5,8 +5,10 @@ import { ActionIcon, Container, Box, Card, rem, Table, Textarea, Modal, Button, 
 import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock, IconEye, IconEdit, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import dayjs from 'dayjs';
 
 export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
+   
     const [values, setValues] = useState({
         ut_date: '',
         ut_time: '',
@@ -57,6 +59,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                setValues('');
                 closeForm();
             },
         });
@@ -121,11 +124,13 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
 
     function handleEditSubmit(e) {
         e.preventDefault();
-        router.post('/UT_Module/ut_entry/edit', {
+        const updatedFields = {
             ut_no: selectedUT.ut_no,
-            ut_date: values.ut_date,
-            ut_time: values.ut_time,
+            ut_date: selectedUT.ut_date,
+            ut_time: selectedUT.ut_time,
             ut_reason: selectedUT.ut_reason,
+        }
+        router.post('/UT_Module/ut_entry/edit', updatedFields, {
             OnError: (errors) => {
                 notifications.show({
                     title: 'Error',
@@ -240,7 +245,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                             name="ut_time"
                             value={values.ut_time}
                             ref={ref}
-                            rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5}/>}
+                            rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
                             onChange={(event) => handleChange(event.target.name, event.target.value)}
                             style={{ width: 125 }}
                         />
@@ -361,14 +366,19 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                                 <DateInput
                                                     label="Date"
                                                     name="ut_date"
-                                                    value={values.ut_date}
+                                                    value={selectedUT.ut_date ? new Date(selectedUT.ut_date) : null}
                                                     placeholder={selectedUT.ut_date || ''}
                                                     onChange={(value) => {
                                                         if (value) {
-                                                            const formattedDate = value.toLocaleDateString('en-CA');
-                                                            handleChange("ut_date", formattedDate);
+                                                            setSelectedUT((prev) => ({
+                                                                ...prev,
+                                                                ut_date: dayjs(value).format('YYYY-MM-DD'), // Format date
+                                                            }));
                                                         } else {
-                                                            handleChange("ut_date", '');
+                                                            setSelectedUT((prev) => ({
+                                                                ...prev,
+                                                                ut_date: '', // Clear the date if value is null
+                                                            }));
                                                         }
                                                     }}
                                                 />
@@ -376,12 +386,12 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                                 <TimeInput
                                                     label="Time"
                                                     name="ut_time"
-                                                    value={values.ut_time}
+                                                    value={selectedUT.ut_time}
                                                     ref={ref}
-                                                    rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5}/>}
-                                                    onChange={(event) => handleChange(event.target.name, event.target.value)}
+                                                    rightSection={<IconClock style={{ width: rem(16), height: rem(16) }} stroke={1.5} />}
+                                                    onChange={(event) => setSelectedUT({ ...selectedUT, ut_time: event.target.value })}
                                                     style={{ width: 125 }}
-                                      adasda as a          />
+                                                    adasda as a />
                                                 <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} onChange={(e) => setSelectedUT({ ...selectedUT, ut_reason: e.target.value })} />
                                                 <Button type="submit" className="mt-3" color="teal">Submit</Button>
                                             </>
@@ -396,7 +406,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                 <Card.Section>Undertime List</Card.Section>
                                 <Table striped>
                                     <Table.Thead>
-                                    <Table.Tr>
+                                        <Table.Tr>
                                             <Table.Th w={70}>Reference No.</Table.Th>
                                             <Table.Th>Employee Name</Table.Th>
                                             <Table.Th>UT Date</Table.Th>
@@ -431,7 +441,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                         ) : (
                                             <p1> tite</p1>
                                         )}
-                                    <Pagination w={200}  total={totalPages2} value={activePage2} onChange={setActivePage2} color="red.4" mt="sm" />
+                                        <Pagination w={200} total={totalPages2} value={activePage2} onChange={setActivePage2} color="red.4" mt="sm" />
 
                                     </Table.Tbody>
                                     {/* Pagination */}

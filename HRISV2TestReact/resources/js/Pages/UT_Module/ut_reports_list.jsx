@@ -315,7 +315,7 @@ export default function ut_reports_list({ UTReportsList }) {
         });
 
         const updatedValue = { ut_upload: updatedData };
-
+        console.log("Update", updatedValue);
         axios.post('/UT_Module/ut_reports_list', updatedValue) //inertia wont work
             .then((response) => {
                 notifications.show({
@@ -337,9 +337,10 @@ export default function ut_reports_list({ UTReportsList }) {
                 if (error.response && error.response.data.errorWarning) {
                     const errors = error.response.data.errorWarning;
                     setErrorMessage(errors); // Update the error state
+                    console.log("errors", error.response.data);
                     const errorList = errors.map((error, index) => (
                         <div key={index}>
-                          Row: {error}
+                            Row: {error}
                         </div>
                     ));
                     notifications.show({
@@ -475,14 +476,14 @@ export default function ut_reports_list({ UTReportsList }) {
 
 
             <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import">
-                {errorWarning && errorWarning.length > 0 && (
-                    <Container>
-                        {errorWarning.map((error, index) => (
-                            <Alert key={index} className="error-item">
-                                {error}
+                {errorMessage && errorMessage.length > 0 && (
+                    <Box>
+                        {errorMessage.map((error, index) => (
+                            <Alert key={index} variant="light" color="red" style={{height: 0}}>
+                                <li>  Row: {error}</li>
                             </Alert>
                         ))}
-                    </Container>
+                    </Box>
                 )}
                 <FileInput
                     label="Upload Template"

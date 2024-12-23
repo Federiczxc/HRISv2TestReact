@@ -11,6 +11,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\CssSelector\Node\SelectorNode;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
+
 
 class UTController extends Controller
 {
@@ -82,6 +84,7 @@ class UTController extends Controller
         $ut = UTModel::where('ut_no', $request->ut_no) //Can only edit Pending
             ->where('ut_status_id', 1)
             ->first();
+            
         $user = Auth::user()->emp_no;
         $request->validate([
             'ut_date' => 'required',
@@ -298,11 +301,11 @@ class UTController extends Controller
         $currentUser = Auth::user()->emp_no;
 
         $request->validate([
-            'ut_upload' => 'required|array'
+            'ut_upload' => 'required'
         ]);
         $csvData = $request->input('ut_upload');
         $errors = [];
-        
+
         foreach ($csvData as $index => $row) {
             $index = $index + 1;
             $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
@@ -310,6 +313,16 @@ class UTController extends Controller
             $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
             $utDate = Carbon::parse($row['UT Date'])->setTimezone('Asia/Manila');
             $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+            if ($employeeName) {
+                Log::info("employeeName Row $index: Employee found: ", ['emp_no' => $employeeName->emp_no, 'name' => $employeeName->name]);
+            } else {
+                Log::info("employeeName Row $index: Employee not found for the provided Employee Name.");
+            }
+            if ($employeeNo) {
+                Log::info("employeeNo Row $index: Employee found: 2", ['emp_no' => $employeeNo->emp_no, 'name' => $employeeNo->name]);
+            } else {
+                Log::info("employeeNo Row $index: Employee2 not found for the provided Employee Name.");
+            }
             if (!$employeeNo) {
                 $errors[] = "$index emp_no '{$row['Employee No.']}' not found in the database.";
             }
@@ -317,54 +330,52 @@ class UTController extends Controller
             if (!$employeeName) {
                 $errors[] = "$index emp_name '{$row['Employee Name']}' not found in the database.";
             }
-            if ($employeeNo && $employeeName && $employeeNo->name !== $row['Employee Name']) {
-                $errors[] = "$index emp_no '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'";
+            if ($employeeNo && $employeeName) {
+                if ($employeeNo->name !== $row['Employee Name']) {
+                    $errors[] = "$index emp_no '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}' in the file";
+                }
             }
             if ($approved_by) {
-                
+
                 if ($employeeName && $approved_by->name !== $employeeName->first_apprv_name && $approved_by->name !== $employeeName->sec_apprv2_name) {
                     $errors[] = "$index '{$row['Approved By']}' is not the approver for Employee '{$row['Employee Name']}'";
                 }
                 if ($employeeName && $approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv2_no) {
                     $errors[] = "$index '{$row['Approved By']}' does not match the first or second appr's emp_no for Employee '{$row['Employee Name']}'";
                 }
-                if ($approved_by->is_approver == 0){
+                if ($approved_by->is_approver == 0) {
                     $errors[] = "$index '{$row['Approved By']}' is not set as an approver";
                 }
-                
             }
-            if (!$approved_by){
-                $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
+            if (!$approved_by) {
+                $errors[] = "$index Approver '{$row['Approved By']}' doesn't exist in the database";
             }
         }
 
         if (!empty($errors)) {
             return response()->json(['errorWarning' => $errors], 422);
         }
+        $employeeName = User::where('emp_no', $row['Employee No.'])->first();
+        $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+        $utDate = Carbon::parse($row['UT Date'])->setTimezone('Asia/Manila');
+        $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
 
-        foreach ($csvData as $index => $row) {
-            $employeeName = User::where('emp_no', $row['Employee No.'])->first();
-            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
-            $utDate = Carbon::parse($row['UT Date'])->setTimezone('Asia/Manila');
-            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
-
-            UTModel::create([
-                'ut_no' => 'Manual',
-                'emp_no' => $employeeName->emp_no,
-                'ut_status_id' => 2,
-                'ut_date' => $utDate,
-                'ut_time' => $row['UT Time'],
-                'ut_reason' => $row['UT Reason'],
-                'first_apprv_no' => $employeeName->first_apprv_no,
-                'sec_apprv_no' => $employeeName->sec_apprv2_no,
-                'approved_by' => $approved_by->emp_no,
-                'approved_date' => $approvedDate,
-                'created_by' => $currentUser,
-                'created_date' => Carbon::now(),
-                'updated_by' => $currentUser,
-                'updated_date' => Carbon::now(),
-            ]);
-        }
+        UTModel::create([
+            'ut_no' => 'Manual',
+            'emp_no' => $employeeName->emp_no,
+            'ut_status_id' => 2,
+            'ut_date' => $utDate,
+            'ut_time' => $row['UT Time'],
+            'ut_reason' => $row['UT Reason'],
+            'first_apprv_no' => $employeeName->first_apprv_no,
+            'sec_apprv_no' => $employeeName->sec_apprv2_no,
+            'approved_by' => $approved_by->emp_no,
+            'approved_date' => $approvedDate,
+            'created_by' => $currentUser,
+            'created_date' => Carbon::now(),
+            'updated_by' => $currentUser,
+            'updated_date' => Carbon::now(),
+        ]);
 
         return response()->json(['message' => 'Entry Successful']);
     }

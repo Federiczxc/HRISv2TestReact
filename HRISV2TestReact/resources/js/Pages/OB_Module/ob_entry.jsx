@@ -15,12 +15,12 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
         destination: '',
         date_from: '',
         date_to: '',
+        ob_days: '',
         time_from: '',
         time_to: '',
         person_to_meet: '',
         ob_purpose: '',
         ob_attach: '',
-        ob_days: '',
     });
     const [activePage, setActivePage] = useState(1);
     const itemsPerPage = 5;
@@ -65,6 +65,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                     position: 'top-center',
                     autoClose: 5000,
                 });
+                setValues('');
                 closeForm();
 
             },
@@ -80,6 +81,72 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
             const today = dayjs().startOf('day');  // Today's date without time
 
+            const minDate = today.subtract(1, 'month');
+
+            const dateFrom = updatedValues.date_from && updatedValues.time_from
+                ? dayjs(updatedValues.date_from).hour(updatedValues.time_from.split(':')[0]).minute(updatedValues.time_from.split(':')[1])
+                : null;
+
+            if (dateFrom && dateFrom.isBefore(minDate, 'day')) {
+                notifications.show({
+                    title: 'Error',
+                    message: `You cannot file an OB request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+
+                updatedValues.date_from = '';
+            }
+
+            const dateTo = updatedValues.date_to && updatedValues.time_to
+                ? dayjs(updatedValues.date_to).hour(updatedValues.time_to.split(':')[0]).minute(updatedValues.time_to.split(':')[1])
+                : null;
+
+            if (dateTo && dateTo.isBefore(minDate, 'day')) {
+                notifications.show({
+                    title: 'Error',
+                    message: `You cannot file an OB request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+
+                updatedValues.date_to = '';
+            }
+
+            if (dateFrom && dateTo) {
+                const daysDiff = dateTo.diff(dateFrom, 'days');
+
+                let excludedSundays = 0;
+                let currentDate = dateFrom;
+
+                // Loop through the days between dateFrom and dateTo, excluding Sundays
+                while (currentDate.isBefore(dateTo) || currentDate.isSame(dateTo, 'day')) {
+                    if (currentDate.day() === 0) {
+                        excludedSundays++;
+                    }
+                    currentDate = currentDate.add(1, 'day');
+                }
+
+                // Calculate the final days count after excluding Sundays
+                let daysCount = Math.max(daysDiff - excludedSundays, 0);
+
+                updatedValues.ob_days = daysCount;
+            }
+
+            return updatedValues;
+        });
+    }
+
+    function handleSelectedOBChange(name, value) {
+        setSelectedOB((prevValues) => {
+            const updatedValues = {
+                ...prevValues,
+                [name]: value,
+            };
+
+            const today = dayjs().startOf('day');  // Today's date without time
             const minDate = today.subtract(1, 'month');
 
             const dateFrom = updatedValues.date_from && updatedValues.time_from
@@ -223,28 +290,31 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
     const preview = values.ob_attach && Array.isArray(values.ob_attach) ? (
         values.ob_attach.map((file) => (
-            <Box key={file.name} style={{ alignItems: "center" }}>
+            <Zoom key={`${file.name}-${file.lastModified}`}>
 
-                {file.type.startsWith('image/') ? (
-                    <Image
-                        w={128}
-                        h={128}
-                        src={URL.createObjectURL(file)}
-                        onLoad={() => URL.revokeObjectURL(file)}
-                        alt={`Preview of ${file.name}`}
-                    />
-                ) : (
-                    <Box style={{ width: 128, height: 128, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <Text size="xl" color="dimmed">File</Text>
-                    </Box>
-                )}
-                <Text truncate style={{ marginTop: '8px', textAlign: 'center' }}>
-                    {file.name}
-                </Text>
-                <Button color="red" size="xs" onClick={() => handleRemoveFile(file)}>
-                    <IconTrash />
-                </Button>
-            </Box>
+                <Box style={{ alignItems: "center" }}>
+
+                    {file.type.startsWith('image/') ? (
+                        <Image
+                            w={128}
+                            h={128}
+                            src={URL.createObjectURL(file)}
+                            onLoad={() => URL.revokeObjectURL(file)}
+                            alt={`Preview of ${file.name}`}
+                        />
+                    ) : (
+                        <Box style={{ width: 128, height: 128, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <Text size="xl" color="dimmed">File</Text>
+                        </Box>
+                    )}
+                    <Text truncate style={{ marginTop: '8px', textAlign: 'center' }}>
+                        {file.name}
+                    </Text>
+                    <Button color="red" size="xs" onClick={() => handleRemoveFile(file)}>
+                        <IconTrash />
+                    </Button>
+                </Box>
+            </Zoom>
 
         ))
     ) : null;
@@ -264,15 +334,16 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
         const updatedFields = {
             ob_no: selectedOB.ob_no,
             destination: selectedOB.destination,
-            date_from: values.date_from,
-            date_to: values.date_to,
-            time_from: values.time_from,
-            time_to: values.time_to,
+            date_from: selectedOB.date_from,
+            date_to: selectedOB.date_to,
+            time_from: selectedOB.time_from,
+            time_to: selectedOB.time_to,
             person_to_meet: selectedOB.person_to_meet,
             ob_purpose: selectedOB.ob_purpose,
-            ob_days: values.ob_days,
+            ob_days: selectedOB.ob_days,
             ob_attach: values.ob_attach,
         }
+        console.log("dede", updatedFields.ob_days);
         router.post('/OB_Module/ob_entry/edit', updatedFields, {
             onError: (errors) => {
                 console.error('Submission Errors:', errors);
@@ -295,6 +366,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                 })
             }
         });
+        setValues(initialFormState);
         close2();
     }
     const formatTime = (time) => {
@@ -354,8 +426,6 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                             </Tabs.Tab>
                         </Tabs.List>
                         <Modal size="auto" opened={openedForm} onClose={closeForm} title={<strong>Create OB </strong>} closeOnClickOutside={false} centered>
-
-
                             <form onSubmit={handleSubmit}>
                                 <Box style={{ display: "flex", flexiwrap: "wrap" }}>
                                     <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
@@ -532,9 +602,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
                                         <Box>
                                             <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
-                                                <Zoom>
-                                                    {preview}
-                                                </Zoom>
+                                                {preview}
                                             </SimpleGrid>
                                         </Box>
 
@@ -641,34 +709,39 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                             <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} disabled />
                                             <DateInput label="Date Filed" placeholder={formatDate(selectedOB.created_date) || ''} disabled />
 
-                                            <Box style={{ display: 'flex', gap: '1rem' }}>
+                                            <Box style={{ display: 'flex', gap: '1rem', }} className="mb-5 " >
                                                 <TextInput label="Approved by" placeholder={selectedOB.approver_name || ''} disabled />
                                                 <TextInput label="Approved Date" placeholder={selectedOB.approved_date || ''} disabled />
                                             </Box>
                                             {
                                                 selectedOB.ob_attach && Array.isArray(JSON.parse(selectedOB.ob_attach)) ? (
-                                                    JSON.parse(selectedOB.ob_attach).map((file, index) => (
-                                                        <Box key={index} w={300} style={{ marginBottom: '1rem' }}>
-                                                            <Text truncate="start">{file}</Text>
 
-                                                            {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
-                                                                <Zoom>
+                                                    <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                        {JSON.parse(selectedOB.ob_attach).map((file, index) => (
 
-                                                                    <Image
-                                                                        w={128}
-                                                                        h={128}
-                                                                        src={`/storage/${file}`}
-                                                                        alt={`Preview of ${file}`}
-                                                                    />
-                                                                </Zoom>
+                                                            <Box key={index} w={100} style={{ marginBottom: '1rem' }}>
+                                                                <Text truncate="start">{file}</Text>
+                                                                {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
 
-                                                            ) : (
-                                                                <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                                                    <Text size="xl" color="dimmed">File</Text>
-                                                                </Box>
-                                                            )}
-                                                        </Box>
-                                                    ))
+                                                                    <Zoom>
+                                                                        <Image
+                                                                            w={128}
+                                                                            h={128}
+                                                                            src={`/storage/${file}`}
+                                                                            alt={`Preview of ${file}`}
+                                                                        />
+                                                                    </Zoom>
+
+                                                                ) : (
+                                                                    <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                                        <Text size="xl" color="dimmed">File</Text>
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
+
+                                                        ))}
+                                                    </SimpleGrid>
+
                                                 ) : (
                                                     <p>No attachment available.</p>
                                                 )
@@ -696,78 +769,76 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                 <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                                     <DateInput
                                                         name="date_from"
-                                                        value={values.date_from ? new Date(values.date_from) : null}
+                                                        value={selectedOB.date_from ? new Date(selectedOB.date_from) : null}
                                                         label="Date From"
                                                         placeholder={selectedOB.date_from || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
                                                         onChange={(value) => {
                                                             if (value) {
+
                                                                 const selectedDate = new Date(value);
                                                                 const today = new Date();
-                                                                const dateTo = new Date(values.date_to);
+                                                                const dateTo = new Date(selectedOB.date_to);
                                                                 today.setHours(0, 0, 0, 0);
                                                                 if (selectedDate < today) {
                                                                     notifications.show({
                                                                         title: 'Warning',
-                                                                        message: 'You are currently late filing a UT Request',
-                                                                        position: 'top-right',
+                                                                        message: `You are currently late filing a UT Request`,
+                                                                        position: 'top-center',
                                                                         color: 'yellow',
-                                                                        autoclose: 5000,
+                                                                        autoClose: 5000,
                                                                     })
                                                                 }
 
                                                                 if (selectedDate > dateTo) {
-                                                                    notifications.show({
-                                                                        title: 'Error',
-                                                                        message: `The "Date From" cannot be later than "Date To".`,
-                                                                        position: 'top-right',
-                                                                        color: 'red',
-                                                                        autoClose: 5000,
-                                                                    })
-                                                                } else {
-                                                                    handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                    handleSelectedOBChange("date_from", dayjs(value).format('YYYY-MM-DD'))
 
+                                                                    handleSelectedOBChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                } else {
+                                                                    handleSelectedOBChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                    if (!selectedOB.date_to) {
+                                                                        handleSelectedOBChange("date_to", dayjs(value).format('YYYY-MM-DD'));
+                                                                    }
                                                                 }
                                                             } else {
-                                                                handleChange("date_from", '');
-
+                                                                handleSelectedOBChange("date_from", '');
+                                                                handleSelectedOBChange("date_to", '');
                                                             }
                                                         }}
                                                     />
                                                     <DateInput
                                                         name="date_to"
-                                                        value={values.date_to ? new Date(values.date_to) : null}
+                                                        value={selectedOB.date_to ? new Date(selectedOB.date_to) : null}
                                                         label="Date To"
                                                         placeholder={selectedOB.date_to || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
                                                         onChange={(value) => {
                                                             if (value) {
-                                                                const dateFrom = new Date(values.date_from);
+                                                                const dateFrom = new Date(selectedOB.date_from);
                                                                 const selectedDate = new Date(value);
                                                                 if (selectedDate < dateFrom) {
-                                                                    notifications.show({
-                                                                        title: 'Error',
-                                                                        message: `The "Date to" cannot be earlier than "Date from ".`,
-                                                                        position: 'top-right',
-                                                                        color: 'red',
-                                                                        autoClose: 5000,
-                                                                    })
-                                                                } else {
-                                                                    handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                    handleSelectedOBChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                    handleSelectedOBChange("date_to", dayjs(value).format('YYYY-MM-DD'))
 
+
+                                                                } else {
+                                                                    handleSelectedOBChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                    if (!selectedOB.date_to) {
+                                                                        handleSelectedOBChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                    }
                                                                 }
-                                                            } else {
-                                                                handleChange("date_to", '');
                                                             }
-                                                        }
-                                                        }
+                                                            else {
+                                                                handleSelectedOBChange("date_to", '');
+                                                            }
+                                                        }}
                                                     />
                                                     <TextInput
                                                         label="OB Days"
                                                         name="ob_days"
-                                                        value={values.ob_days}
+                                                        value={selectedOB.ob_days}
                                                         placeholder={selectedOB.ob_days}
                                                         disabled
                                                         style={{ width: 100 }}
@@ -778,26 +849,22 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                     <TimeInput
                                                         label="Time From"
                                                         name="time_from"
-                                                        value={values.time_from}
+                                                        value={selectedOB.time_from}
                                                         placeholder={selectedOB.time_from}
                                                         ref={ref}
                                                         rightSection={pickerControl}
                                                         style={{ flex: 1 }}
-                                                        onChange={(event) =>
-                                                            handleChange(event.target.name, event.target.value)
-                                                        }
+                                                        onChange={(event) => handleSelectedOBChange('time_from', event.target.value)}
                                                     />
                                                     <TimeInput
                                                         label="Time To"
                                                         name="time_to"
-                                                        value={values.time_to}
+                                                        value={selectedOB.time_to}
                                                         placeholder={selectedOB.time_to}
                                                         ref={ref2}
                                                         rightSection={pickerControl2}
                                                         style={{ flex: 1 }}
-                                                        onChange={(event) =>
-                                                            handleChange(event.target.name, event.target.value)
-                                                        }
+                                                        onChange={(event) => handleSelectedOBChange('time_to', event.target.value)}
                                                     />
                                                 </Box>
 
@@ -825,14 +892,85 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                     }
                                                     style={{ marginTop: '1rem' }}
                                                 />
-                                                <FileInput
-                                                    label="Attachment"
-                                                    onChange={(files) => handleFileChange(files)}
-                                                    style={{ marginTop: '1rem' }}
-                                                    multiple
-                                                    placeholder={selectedOB.ob_attach}
-                                                />
+                                                <Box style={{ flex: "1 1 35%", }}>
+                                                    <Dropzone
+                                                        onDrop={handleFileChange}
+                                                        onReject={(ob_attach) => console.log('rejected files', ob_attach)}
+                                                        maxSize={5 * 1024 ** 2}
+                                                        multiple
+                                                        style={{ width: "100%" }}>
+                                                        <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
+                                                            <Dropzone.Accept>
+                                                                <IconUpload
+                                                                    style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
+                                                                    stroke={1.5}
+                                                                />
+                                                            </Dropzone.Accept>
+                                                            <Dropzone.Reject>
+                                                                <IconX
+                                                                    style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
+                                                                    stroke={1.5}
+                                                                />
+                                                            </Dropzone.Reject>
+                                                            <Dropzone.Idle>
+                                                                <IconPhoto
+                                                                    style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
+                                                                    stroke={1.5}
+                                                                />
+                                                            </Dropzone.Idle>
 
+                                                            <Box>
+                                                                <Text size="xl" inline>
+                                                                    Drag image or document here
+                                                                </Text>
+                                                                <Text size="sm" c="dimmed" inline mt={7}>
+                                                                    Each file should not exceed 5mb. Image will be previewed.
+                                                                </Text>
+                                                            </Box>
+                                                        </Group>
+                                                    </Dropzone>
+
+                                                    <Box>
+                                                        <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                            {preview}
+                                                        </SimpleGrid>
+                                                    </Box>
+
+
+                                                </Box>
+                                                {
+                                                    selectedOB.ob_attach && Array.isArray(JSON.parse(selectedOB.ob_attach)) ? (
+
+                                                        <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                            {JSON.parse(selectedOB.ob_attach).map((file, index) => (
+
+                                                                <Box key={index} w={100} style={{ marginBottom: '1rem' }}>
+                                                                    <Text truncate="start">{file}</Text>
+                                                                    {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+
+                                                                        <Zoom>
+                                                                            <Image
+                                                                                w={128}
+                                                                                h={128}
+                                                                                src={`/storage/${file}`}
+                                                                                alt={`Preview of ${file}`}
+                                                                            />
+                                                                        </Zoom>
+
+                                                                    ) : (
+                                                                        <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                                            <Text size="xl" color="dimmed">File</Text>
+                                                                        </Box>
+                                                                    )}
+                                                                </Box>
+
+                                                            ))}
+                                                        </SimpleGrid>
+
+                                                    ) : (
+                                                        <p>No attachment available.</p>
+                                                    )
+                                                }
                                                 <Button
                                                     type="submit"
                                                     className="mt-3"

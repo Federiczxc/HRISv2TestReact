@@ -527,6 +527,7 @@ export default function ob_reports_list({ OBReportsList }) {
                                 <Table.Tr key={rowIndex}>
                                     {Object.values(row).map((cell, cellIndex) => (
                                         <Table.Td key={cellIndex}>{formatCell(cell)}</Table.Td>
+                                        
                                     ))}
                                 </Table.Tr>
                             ))}

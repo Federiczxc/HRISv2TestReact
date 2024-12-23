@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\CssSelector\Node\SelectorNode;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 
 class OBController extends Controller
@@ -129,6 +130,7 @@ class OBController extends Controller
         $ob->date_to = $request->date_to;
         $ob->time_from = $request->time_from;
         $ob->time_to = $request->time_to;
+        $ob->ob_days = $request->ob_days;
         $ob->person_to_meet = $request->person_to_meet;
         $ob->ob_purpose = $request->ob_purpose;
         $ob->updated_by = $user;
@@ -329,6 +331,7 @@ class OBController extends Controller
         $csvData = $request->input('ob_upload');
         $errors = [];
         foreach ($csvData as $index => $row) {
+            $index = $index + 1;
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
             $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
             $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
@@ -336,6 +339,8 @@ class OBController extends Controller
             $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
             $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
             $obDays = $dateFrom->diffInDays($dateTo);
+            Log::info($csvData);
+
             if (!$employeeNo) {
                 $errors[] = "$index Employee No '{$row['Employee No.']}' not found in the database.";
             }
@@ -362,9 +367,9 @@ class OBController extends Controller
             if (!$approved_by) {
                 $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
             }
-            if (!empty($errors)) {
-                return response()->json(['errorWarning' => $errors], 422);
-            }
+        }
+        if (!empty($errors)) {
+            return response()->json(['errorWarning' => $errors], 422);
         }
         foreach ($csvData as $index => $row) {
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
@@ -399,6 +404,5 @@ class OBController extends Controller
             ]);
         }
         return response()->json(['message' => 'Entry Successful']);
-
     }
 }
