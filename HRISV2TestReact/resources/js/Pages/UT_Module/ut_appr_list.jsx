@@ -425,7 +425,7 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
         title: 'Please Confirm',
         children: (
             <Text size="sm">
-                Are you sure that you want to reject all requests?
+                Are you sure that you want to disapprove all requests?
             </Text>
         ),
         labels: { confirm: 'Confirm', cancel: 'Cancel' },
@@ -492,12 +492,12 @@ export default function ut_appr_list({ UTPendingList, UTUpdatedList, apprvID, vi
                                 </Title>
                                 <Flex className="ms-3">
                                     <Button onClick={() => openModal()} color='green' variant="outline"> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red' ms={10} variant="outline"> Reject all</Button>
+                                    <Button onClick={() => openModal2()} color='red' ms={10} variant="outline"> Disapproved all</Button>
                                     {selectedRowCount > 0 && (
                                         <>
 
                                             <Button onClick={() => handleUpdateStatus(2)} ms={10} color='green' variant="outline"> Approve Selected</Button>
-                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10} variant="outline"> Reject Selected</Button>
+                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10} variant="outline"> Disapproved Selected</Button>
                                         </>
                                     )}
                                 </Flex>

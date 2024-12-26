@@ -64,7 +64,14 @@ export default function ut_reports_list({ UTReportsList }) {
             accessorKey: 'status.mf_status_name',
             header: 'Status',
             enableResizing: false,
-
+            /* Cell: ({ cell }) => {
+                console.log(cell.getValue())
+                return (
+                    <span style={{ color: cell.getValue() === 'Pending' ? "green" : "red" }}>
+                        {cell.getValue()}
+                    </span>
+                )
+            } */
         },
         {
             accessorKey: 'ut_date',
@@ -117,13 +124,7 @@ export default function ut_reports_list({ UTReportsList }) {
         },
 
     ];
-    /* const csvConfig = mkConfig({
-        fieldSeparator: ',',
-        decimalSeparaator: '.',
-        useKeysAsHeaders: true,
-        filename: 'UT_Reports_List',
 
-    }) */
     const handleExportData = () => {
         const visibleColumns = columns.filter(
             (column) => table.getState().columnVisibility[column.accessorKey] !== false
@@ -154,8 +155,7 @@ export default function ut_reports_list({ UTReportsList }) {
             return mappedRow;
         });
 
-        /* const csv = generateCsv(csvConfig)(mappedData);
-        download(csvConfig)(csv); */
+
         const worksheet = XLSX.utils.json_to_sheet(mappedData); //extractata data
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
@@ -192,8 +192,7 @@ export default function ut_reports_list({ UTReportsList }) {
             return mappedRow;
         });
 
-        /* const csv = generateCsv(csvConfig)(rowData);
-        download(csvConfig)(csv); */
+
         const worksheet = XLSX.utils.json_to_sheet(rowData); //extractata data
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
@@ -201,9 +200,6 @@ export default function ut_reports_list({ UTReportsList }) {
     };
 
     const handleExportTemplate = () => {
-        /*  const visibleColumns = columns.filter(
-             (column) => table.getState().columnVisibility[column.accessorKey] !== false
-         ); */
         const fixedColumnHeaders = [
             'Employee No.',
             'Employee Name',
@@ -214,15 +210,7 @@ export default function ut_reports_list({ UTReportsList }) {
             'Approved By',
             'Approved Date',
         ];
-        /*       const columnHeaders = visibleColumns.map((column) => column.header).join(','); */
-        /*   const columnHeaders = fixedColumnHeaders.join(','); */
-        /*  const csvContent = `${columnHeaders}\n`;
-  */
-        /*  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-         const link = document.createElement('a');
-         link.href = URL.createObjectURL(blob);
-         link.download = 'UT_Reports_List_Template.csv';
-         link.click(); */
+
         const data = [fixedColumnHeaders];
         data.push(new Array(fixedColumnHeaders.length).fill(''));
         const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -238,9 +226,6 @@ export default function ut_reports_list({ UTReportsList }) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const data = new Uint8Array(event.target.result);
-
-
-
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
@@ -259,6 +244,18 @@ export default function ut_reports_list({ UTReportsList }) {
 
     const handleUpload = () => {
         if (file) {
+            if (!file.name.toLowerCase().includes("ut")) {
+                notifications.show({
+                    title: 'Error',
+                    message: 'It must be a UT File!',
+                    color: 'red',
+                    position: 'top-right',
+                    autoClose: 5000,
+                });
+
+                return;
+            }
+
             const reader = new FileReader();
 
             reader.onload = (event) => {
@@ -271,7 +268,19 @@ export default function ut_reports_list({ UTReportsList }) {
                 const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
 
                 console.log("Parsed Data:", parsedData);
+                const columns = Object.keys(parsedData[0]); // Get all column names from the first row
+                const hasUT = columns.some(col => col.toLowerCase().includes("ut"));
 
+                if (!hasUT) {
+                    notifications.show({
+                        title: 'Error',
+                        message: 'The file must contain at least one column with "UT" in its name.',
+                        color: 'red',
+                        position: 'top-right',
+                        autoClose: 5000,
+                    });
+                    return;
+                }
                 // Pass parsed data to your handler function
                 handleUploadData(parsedData);
             };
@@ -280,20 +289,7 @@ export default function ut_reports_list({ UTReportsList }) {
         }
     };
 
-    /* const handleUpload = () => {
-        if (file) {
-            Papa.parse(file, {
-                complete: (result) => {
-                    const parsedData = result.data;
-                    console.log("tite", parsedData);
-                    handleUploadData(parsedData);
-                },
-                header: true,
-                skipEmptyLines: true
-            })
 
-        }
-    }; */
     const formatCell = (cell) => {
         if (cell instanceof Date) {
             if (cell.getFullYear() === 1899 && (cell.getMonth() === 11 && (cell.getDate() === 30 || cell.getDate() === 31))) {
@@ -372,6 +368,7 @@ export default function ut_reports_list({ UTReportsList }) {
         columnResizeMode: 'onEnd',
         paginationDisplayMode: 'pages',
         positionToolbarAlertBanner: 'bottom',
+
         initialState: {
             density: 'xs',
             columnVisibility: {
@@ -402,7 +399,6 @@ export default function ut_reports_list({ UTReportsList }) {
                     <MRT_ToggleDensePaddingButton table={table} />
                     <MRT_ToggleFullScreenButton table={table} />
                 </Flex>
-
 
             </Box>
 
@@ -475,13 +471,13 @@ export default function ut_reports_list({ UTReportsList }) {
             <MantineReactTable table={table} />
 
 
-            <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import">
+            <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import UT Reports">
                 {errorMessage && errorMessage.length > 0 && (
                     <Box>
                         {errorMessage.map((error, index) => (
-                            <Alert key={index} variant="light" color="red" style={{height: 0}}>
+                            <span key={index} variant="light" style={{ color: "red" }}>
                                 <li>  Row: {error}</li>
-                            </Alert>
+                            </span>
                         ))}
                     </Box>
                 )}

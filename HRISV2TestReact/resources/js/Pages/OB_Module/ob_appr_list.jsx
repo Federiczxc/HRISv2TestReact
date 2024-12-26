@@ -371,7 +371,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
         title: 'Please Confirm',
         children: (
             <Text size="sm">
-                Are you sure that you want to reject all requests?
+                Are you sure that you want to disapprove all requests?
             </Text>
         ),
         labels: { confirm: 'Confirm', cancel: 'Cancel' },
@@ -488,12 +488,12 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                 </Title>
                                 <Flex className="ms-3">
                                     <Button onClick={() => openModal()} color='green' variant="outline"> Approve all</Button>
-                                    <Button onClick={() => openModal2()} color='red' ms={10} variant="outline"> Reject all</Button>
+                                    <Button onClick={() => openModal2()} color='red' ms={10} variant="outline"> Disapproved all</Button>
                                     {selectedRowCount > 0 && (
                                         <>
 
                                             <Button onClick={() => handleUpdateStatus(2)} ms={10} color='green' variant="outline"> Approve Selected</Button>
-                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10} variant="outline"> Reject Selected</Button>
+                                            <Button onClick={() => handleUpdateStatus(3)} color='red' ms={10} variant="outline"> Disapproved Selected</Button>
                                         </>
                                     )}
                                 </Flex>
@@ -644,9 +644,12 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
                                         >
                                             <option value="">Please select</option>
                                             <option value="2">Approved</option>
-                                            <option value="3">Rejected</option>
+                                            <option value="3">Disapproved</option>
                                         </Form.Select>
-
+                                        <Textarea
+                                            label="Remarks"
+                                            value={selectedPendingOB.appr_remarks || ''}
+                                            onChange={(e) => setSelectedPendingOB({ ...selectedPendingOB, appr_remarks: e.target.value })} />
                                         <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                             <DateInput
                                                 label="OB Date From"
@@ -694,10 +697,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
 
                                         <Textarea label="OB Purpose" value={selectedPendingOB.ob_purpose || ''} disabled />
 
-                                        <Textarea
-                                            label="Remarks"
-                                            value={selectedPendingOB.appr_remarks || ''}
-                                            onChange={(e) => setSelectedPendingOB({ ...selectedPendingOB, appr_remarks: e.target.value })} />
+
                                         {
                                             selectedPendingOB.ob_attach && Array.isArray(JSON.parse(selectedPendingOB.ob_attach)) ? (
                                                 JSON.parse(selectedPendingOB.ob_attach).map((file, index) => (
@@ -862,7 +862,7 @@ export default function ob_appr_list({ OBPendingList, OBUpdatedList, apprvID, vi
 
 
 
-                      
+
                     </Tabs>
                 </Card>
             </Container>

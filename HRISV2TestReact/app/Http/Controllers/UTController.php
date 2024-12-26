@@ -84,7 +84,7 @@ class UTController extends Controller
         $ut = UTModel::where('ut_no', $request->ut_no) //Can only edit Pending
             ->where('ut_status_id', 1)
             ->first();
-            
+
         $user = Auth::user()->emp_no;
         $request->validate([
             'ut_date' => 'required',
@@ -305,7 +305,23 @@ class UTController extends Controller
         ]);
         $csvData = $request->input('ut_upload');
         $errors = [];
+        $expectedColumns = [
+            'Employee No.',
+            'Employee Name',
+            'UT Date',
+            'UT Time',
+            'UT Reason',
+            'Approved By',
+            'Approved Date',
 
+        ];
+        $columns = array_keys($csvData[0]);
+        foreach ($expectedColumns as $expectedColumn) {
+            if (!in_array($expectedColumn, $columns)) {
+                $errors[] = "Column '$expectedColumn' is missing or misspelled in the uploaded file.";
+                return response()->json(['errorWarning' => $errors], 422);
+                }
+        }
         foreach ($csvData as $index => $row) {
             $index = $index + 1;
             $employeeNo = User::where('emp_no', $row['Employee No.'])->first();

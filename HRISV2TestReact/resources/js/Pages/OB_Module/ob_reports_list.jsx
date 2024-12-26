@@ -312,6 +312,17 @@ export default function ob_reports_list({ OBReportsList }) {
     }
     const handleUpload = () => {
         if (file) {
+            if (!file.name.toLowerCase().includes("ob")) {
+                notifications.show({
+                    title: 'Error',
+                    message: 'It must be an OB File!',
+                    color: 'red',
+                    position: 'top-right',
+                    autoClose: 5000,
+                });
+
+                return;
+            }
             const reader = new FileReader();
 
             reader.onload = (event) => {
@@ -324,6 +335,9 @@ export default function ob_reports_list({ OBReportsList }) {
                 const parsedData = XLSX.utils.sheet_to_json(firstSheet, { header: true, });
 
                 console.log("Parsed Data:", parsedData);
+                const columns = Object.keys(parsedData[0]); // Get all column names from the first row
+                const hasOB = columns.some(col => col.toLowerCase().includes("ob"));
+
 
                 // Pass parsed data to your handler function
                 handleUploadData(parsedData);
@@ -507,6 +521,15 @@ export default function ob_reports_list({ OBReportsList }) {
             </Button>
             <MantineReactTable table={table} />
             <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import OB Reports">
+                 {errorMessage && errorMessage.length > 0 && (
+                                    <Box>
+                                        {errorMessage.map((error, index) => (
+                                            <span key={index} variant="light" style={{ color: "red" }}>
+                                                <li>  Row: {error}</li>
+                                            </span>
+                                        ))}
+                                    </Box>
+                                )}
                 <FileInput
                     label="Upload Template"
                     placeholder="Choose .xls"
@@ -527,7 +550,7 @@ export default function ob_reports_list({ OBReportsList }) {
                                 <Table.Tr key={rowIndex}>
                                     {Object.values(row).map((cell, cellIndex) => (
                                         <Table.Td key={cellIndex}>{formatCell(cell)}</Table.Td>
-                                        
+
                                     ))}
                                 </Table.Tr>
                             ))}

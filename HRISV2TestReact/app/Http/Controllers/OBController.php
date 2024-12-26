@@ -330,6 +330,28 @@ class OBController extends Controller
         ]);
         $csvData = $request->input('ob_upload');
         $errors = [];
+        $expectedColumns = [
+            'Employee No.',
+            'Employee Name',
+            'Date From',
+            'Time From',
+            'Date To',
+            'Time To',
+            'Destination',
+            'Person To Meet',
+            'Purpose',
+            'Date Filed',
+            'Approved By',
+            'Approved Date',
+
+        ];
+        $columns = array_keys($csvData[0]);
+        foreach ($expectedColumns as $expectedColumn) {
+            if (!in_array($expectedColumn, $columns)) {
+                $errors[] = "Column '$expectedColumn' is missing or misspelled in the uploaded file.";
+                return response()->json(['errorWarning' => $errors], 422);
+            }
+        }
         foreach ($csvData as $index => $row) {
             $index = $index + 1;
             $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
