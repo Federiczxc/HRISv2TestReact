@@ -2,10 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
 import Zoom from "react-medium-image-zoom";
-import { useForm, router } from '@inertiajs/react'
-import { Form } from 'react-bootstrap';
+import { router } from '@inertiajs/react'
 import { ActionIcon, SimpleGrid, Card, Container, Group, Text, Tabs, rem, Title, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput, FileInput } from '@mantine/core';
-import { DateInput, DatePickerInput, TimeInput } from '@mantine/dates';
+import { DateInput, TimeInput } from '@mantine/dates';
 import { IconClock, IconEye, IconEdit, IconTrash, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { Dropzone } from '@mantine/dropzone';
@@ -411,8 +410,8 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
     const closeForm = () => setOpenedForm(false);
     return (
         <AppLayout>
-            <Container fluid className="mt-3">
-                <Card withBorder w={1300}>
+            <Container fluid className="mt-5">
+                <Card withBorder>
                     <Box className="">
                         <Button onClick={() => openForm()} color='green'> Create OB</Button>
                     </Box>
@@ -623,14 +622,14 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
-                                            <Table.Th w={25}> Reference No.</Table.Th>
+                                            <Table.Th w={75}> Reference No.</Table.Th>
                                             <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
                                             <Table.Th> Time From</Table.Th>
                                             <Table.Th> Time To</Table.Th>
                                             <Table.Th> Destination</Table.Th>
-                                            <Table.Th w={100}> Person To Meet</Table.Th>
+                                            <Table.Th > Person To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Date File</Table.Th>
@@ -642,7 +641,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                             paginatedData.map((ob) => {
                                                 return (
                                                     <Table.Tr key={ob.ob_id}>
-                                                        <Table.Td width={150}> {ob.ob_no}</Table.Td>
+                                                        <Table.Td > {ob.ob_no}</Table.Td>
                                                         <Table.Td> {ob.user?.name}</Table.Td>
                                                         <Table.Td> {ob.date_from}</Table.Td>
                                                         <Table.Td> {ob.date_to}</Table.Td>
@@ -998,6 +997,8 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                             <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
+                                            <Table.Th> Time From</Table.Th>
+                                            <Table.Th> Time To</Table.Th>
                                             <Table.Th> Destination</Table.Th>
                                             <Table.Th> Person To Meet</Table.Th>
                                             <Table.Th> Purpose</Table.Th>
@@ -1013,8 +1014,10 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                     <Table.Tr key={ob.ob_id}>
                                                         <Table.Td> {ob.ob_no}</Table.Td>
                                                         <Table.Td> {ob.user?.name}</Table.Td>
-                                                        <Table.Td> {ob.date_from} to {ob.date_to}</Table.Td>
-                                                        <Table.Td> {formatTime(ob.time_from)} & {formatTime(ob.time_to)}</Table.Td>
+                                                        <Table.Td> {ob.date_from}</Table.Td>
+                                                        <Table.Td> {ob.date_to}</Table.Td>
+                                                        <Table.Td> {formatTime(ob.time_from)} </Table.Td>
+                                                        <Table.Td>  {formatTime(ob.time_to)} </Table.Td>
                                                         <Table.Td> {ob.destination}</Table.Td>
                                                         <Table.Td> {ob.person_to_meet}</Table.Td>
 
@@ -1023,8 +1026,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                                                         <Table.Td> {formatDate(ob.updated_date)}</Table.Td>
                                                         <Table.Td>
                                                             {!(ob.ob_status_id === 2 || ob.ob_status_id === 3 || ob.status?.mf_status_name === 'Approved' || ob.status?.mf_status_name === 'Disapproved') && (
-                                                                <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2">Delete</Button>
-
+                                                                <Button onClick={() => handleDelete(ob.ob_id)} color="red" className="ms-2"><IconTrash /></Button>
                                                             )}
                                                         </Table.Td>
                                                     </Table.Tr>

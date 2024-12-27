@@ -3,6 +3,7 @@
 use App\Http\Controllers\OBController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\OTController;
 use App\Http\Controllers\UTController;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,15 +27,17 @@ Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboar
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
 Route::get('/UT_Module/ut_entry/', [UTController::class, 'index'])->middleware('auth')->name('ut.entry');
 Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest'])->middleware('auth');
+Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
 Route::post('/UT_Module/ut_entry/{id}', [UTController::class, 'spoilUTRequest']);
 Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest'])->name('delete.ut');
 Route::post('/UT_Module/ut_entry/', [UTController::class, 'UTEntry']);
-Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
+//UT APPR
 Route::post('/UT_Module/ut_appr_list/edit', [UTController::class, 'editUTApprRequest']);
 Route::get('/UT_Module/ut_appr_list', [UTController::class, 'UTApprList'])->middleware('auth')->name('apprlist.show');
 Route::post('/UT_Module/ut_appr_list/edit/{id}', [UTController::class, 'updateUTRequest']);
 Route::post('/UT_Module/ut_appr_list', [UTController::class, 'updateAll'])->name('update.all');
 Route::post('/UT_Module/ut_appr_list/batch', [UTController::class, 'updateBatch'])->name('update.batch');
+//UT Reports
 Route::get('/UT_Module/ut_reports_list', [UTController::class, 'UTReportsList'])->middleware('auth')->name('utreports.show');
 Route::post('/UT_Module/ut_reports_list', [UTController::class, 'uploadUTReport']);
 
@@ -45,11 +48,17 @@ Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']);
 /* Route::post('/OB_Module/ob_entry/edit', [OBController::class, 'editOBRequest']); */
 Route::post('/OB_Module/ob_entry/{id}', [OBController::class, 'spoilOBRequest']);
 Route::delete('/OB_Module/ob_entry/{id}', [OBController::class, 'deleteOBRequest'])->name('delete.ob');
+//OB APPR
 Route::get('/OB_Module/ob_appr_list', [OBController::class, 'OBApprList'])->middleware('auth')->name('obapprlist.show');
 Route::post('/OB_Module/ob_appr_list', [OBController::class, 'updateAll'])->name('obupdate.all');
 Route::post('/OB_Module/ob_appr_list/batch', [OBController::class, 'updateBatch'])->name('update.obbatch');
 Route::post('/OB_Module/ob_appr_list/edit', [OBController::class, 'editOBApprRequest']);
 Route::post('/OB_Module/ob_appr_list/edit/{id}', [OBController::class, 'updateOBRequest']);
+//OB Reports
 Route::get('/OB_Module/ob_reports_list', [OBController::class, 'OBReportsList'])->middleware('auth')->name('obreports.show');
 Route::post('/OB_Module/ob_reports_list', [OBController::class, 'uploadOBReport']);
 
+//OT
+Route::get('/OT_Module/ot_entry/', [OTController::class, 'index'])->middleware('auth');
+Route::post('/OT_Module/ot_entry/', [OTController::class, 'OTEntry']);
+Route::post('/OT_Module/ot_entry/{id}', [OTController::class, 'spoilOTRequest']);

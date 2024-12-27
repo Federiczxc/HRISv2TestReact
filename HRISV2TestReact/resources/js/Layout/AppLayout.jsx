@@ -13,6 +13,7 @@ import "react-medium-image-zoom/dist/styles.css";
 const AppLayout = ({ children }) => {
 
     return (
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
 
         <MantineProvider>
             <Notifications />
@@ -25,6 +26,7 @@ const AppLayout = ({ children }) => {
             </ModalsProvider>
 
         </MantineProvider>
+        </div>
     );
 };
 

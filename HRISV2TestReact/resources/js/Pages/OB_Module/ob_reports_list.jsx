@@ -521,15 +521,15 @@ export default function ob_reports_list({ OBReportsList }) {
             </Button>
             <MantineReactTable table={table} />
             <Modal closeOnClickOutside={false} size="l" opened={opened} onClose={close} title="Import OB Reports">
-                 {errorMessage && errorMessage.length > 0 && (
-                                    <Box>
-                                        {errorMessage.map((error, index) => (
-                                            <span key={index} variant="light" style={{ color: "red" }}>
-                                                <li>  Row: {error}</li>
-                                            </span>
-                                        ))}
-                                    </Box>
-                                )}
+                {errorMessage && errorMessage.length > 0 && (
+                    <Box>
+                        {errorMessage.map((error, index) => (
+                            <span key={index} variant="light" style={{ color: "red" }}>
+                                <li>  Row: {error}</li>
+                            </span>
+                        ))}
+                    </Box>
+                )}
                 <FileInput
                     label="Upload Template"
                     placeholder="Choose .xls"

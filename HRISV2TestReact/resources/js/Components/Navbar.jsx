@@ -1,73 +1,82 @@
 import React from "react";
-import { Link, useForm, usePage } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
+import {
+  IconClockHour2,
+  IconUser,
+  IconNotes,
+  IconLogout
+} from '@tabler/icons-react';
+import { Code, Group, ScrollArea } from '@mantine/core';
+import classes from './NavbarCSS.module.css'
+import { LinksGroup } from './NavbarLinksGroup/NavbarLinksGroup';
 
-const Navbar = () => {
-  const { post } = useForm();
+
+export default function Navbar() {
   const { auth } = usePage().props;
+  const { post } = useForm();
+
   const handleLogout = (e) => {
     e.preventDefault();
     post('/logout');
   }
+  const navbardata = [
+    { label: 'User Dashboard', icon: IconUser, link: '/UT_Module/ut_dashboard' },
+    {
+      label: 'Undertime',
+      icon: IconClockHour2,
+      initallyOpened: false,
+      links: [
+        { label: 'UT List', link: '/UT_Module/ut_entry' },
+        { label: 'UT Approval', link: '/UT_Module/ut_appr_list' },
+        { label: 'UT Reports', link: '/UT_Module/ut_reports_list' }
+
+      ]
+    },
+    {
+      label: 'Overtime',
+      icon: IconClockHour2,
+      initallyOpened: false,
+      links: [
+        { label: 'OT List', link: '/OT_Module/ot_entry' },
+        { label: 'OT Approval', link: '/OT_Module/ot_appr_list' },
+        { label: 'OT Reports', link: '/OT_Module/ot_reports_list' }
+
+      ]
+    },
+    {
+      label: 'Official Business',
+      icon: IconNotes,
+      iniitallyOpened: false,
+      links: [
+        { label: 'OB List', link: '/OB_Module/ob_entry' },
+        { label: 'OB Approval', link: '/OB_Module/ob_appr_list' },
+        { label: 'OB Reports', link: '/OB_Module/ob_reports_list' }
+
+      ]
+    }
+  ]
+  const links = navbardata.map((item) => <LinksGroup {...item} key={item.label} />);
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light">
-      <a className="navbar-brand" href="">
-
-        {auth.user ? `Welcome, ${auth.user.name}` : null}
-
-
-      </a>
-
-      <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span className="navbar-toggler-icon"></span>
-      </button>
-
-      <div className="collapse navbar-collapse" id="navbarNav">
-        <ul className="navbar-nav">
-
-          <li className="nav-item">
-            <a className="nav-link" href="/UT_Module/ut_dashboard">Dashboard</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/UT_Module/ut_entry"> UT Entry</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/UT_Module/ut_appr_list"> UT Approval</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/UT_Module/ut_reports_list"> UT Reports</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/OB_Module/ob_entry"> OB Entry</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/OB_Module/ob_appr_list"> OB Approval</a>
-          </li>
-
-          <li className="nav-item active">
-            <a className="nav-link" href="/OB_Module/ob_reports_list"> OB Reports</a>
-          </li>
-          {/* Logout link */}
-          {auth.user ? <li className="nav-item">
-            <a
-              className="nav-link"
-              href="#"
-              onClick={handleLogout}  // Handle logout click
-            >
-              Logout
-            </a>
-          </li> : null}
-
-
-        </ul>
+    <nav className={classes.navbar}>
+      <div className={classes.header}>
+        <Group justify="space-between">
+          <a className="navbar-brand" href="" style={{ color: "black" }}>
+            {auth.user ? `Welcome, ${auth.user.name}` : null}
+          </a>
+        </Group>
       </div>
+      <ScrollArea className={classes.links}>
+        <div className={classes.linksInner}>{links}</div>
+      </ScrollArea>
+      {auth.user ?
+        <div className={classes.footer}>
+          <a href="#" className={classes.link} onClick={handleLogout} >
+            <IconLogout className={classes.linkIcon} stroke={1.5} />
+            <span style={{ color: "black" }}>Logout</span>
+          </a>
+        </div> : null}
 
     </nav>
+
   );
 };
-
-export default Navbar;

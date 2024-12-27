@@ -432,7 +432,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                                         <Table.Td>{ut2.status?.mf_status_name}</Table.Td>
                                                         <Table.Td>{formatDate(ut2.created_date)}</Table.Td>
                                                         <Table.Td>
-                                                            <ActionIcon onClick={() => handleViewClick(ut2.id)} ><IconEye /></ActionIcon>
+                                                          {/*   <ActionIcon onClick={() => handleViewClick(ut2.id)} ><IconEye /></ActionIcon> */}
                                                             <ActionIcon onClick={() => handleDelete(ut2.id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
                                                         </Table.Td>
                                                     </Table.Tr>

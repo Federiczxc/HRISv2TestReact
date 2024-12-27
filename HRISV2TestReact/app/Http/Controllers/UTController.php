@@ -289,13 +289,7 @@ class UTController extends Controller
             'UTReportsList' => $appr_list,
         ]);
     }
-    /*    public function viewUTReportRequest($id)
-    {
-        $viewUTReportRequest = UTModel::findorfail($id);
-        return Inertia::render('UT_Module/ut_reports_list', [
-            'viewUTReportRequest' => $viewUTReportRequest,
-        ]);
-    } */
+
     public function uploadUTReport(Request $request)
     {
         $currentUser = Auth::user()->emp_no;
@@ -320,7 +314,7 @@ class UTController extends Controller
             if (!in_array($expectedColumn, $columns)) {
                 $errors[] = "Column '$expectedColumn' is missing or misspelled in the uploaded file.";
                 return response()->json(['errorWarning' => $errors], 422);
-                }
+            }
         }
         foreach ($csvData as $index => $row) {
             $index = $index + 1;
