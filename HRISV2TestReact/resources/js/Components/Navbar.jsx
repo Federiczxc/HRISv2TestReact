@@ -6,7 +6,7 @@ import {
   IconNotes,
   IconLogout
 } from '@tabler/icons-react';
-import { Code, Group, ScrollArea } from '@mantine/core';
+import { Code, Group, ScrollArea, Text, UnstyledButton } from '@mantine/core';
 import classes from './NavbarCSS.module.css'
 import { LinksGroup } from './NavbarLinksGroup/NavbarLinksGroup';
 
@@ -26,7 +26,7 @@ export default function Navbar() {
       icon: IconClockHour2,
       initallyOpened: false,
       links: [
-        { label: 'UT List', link: '/UT_Module/ut_entry' },
+        { label: 'UT Entry', link: '/UT_Module/ut_entry' },
         { label: 'UT Approval', link: '/UT_Module/ut_appr_list' },
         { label: 'UT Reports', link: '/UT_Module/ut_reports_list' }
 
@@ -37,7 +37,7 @@ export default function Navbar() {
       icon: IconClockHour2,
       initallyOpened: false,
       links: [
-        { label: 'OT List', link: '/OT_Module/ot_entry' },
+        { label: 'OT Entry', link: '/OT_Module/ot_entry' },
         { label: 'OT Approval', link: '/OT_Module/ot_appr_list' },
         { label: 'OT Reports', link: '/OT_Module/ot_reports_list' }
 
@@ -48,9 +48,20 @@ export default function Navbar() {
       icon: IconNotes,
       iniitallyOpened: false,
       links: [
-        { label: 'OB List', link: '/OB_Module/ob_entry' },
+        { label: 'OB Entry', link: '/OB_Module/ob_entry' },
         { label: 'OB Approval', link: '/OB_Module/ob_appr_list' },
         { label: 'OB Reports', link: '/OB_Module/ob_reports_list' }
+
+      ]
+    },
+    {
+      label: 'Leave',
+      icon: IconNotes,
+      iniitallyOpened: false,
+      links: [
+        { label: 'Leave Entry', link: '/Leave_Module/leave_entry' },
+        { label: 'Leave Approval', link: '/Leave_Module/leave_appr_list' },
+        { label: 'Leave Reports', link: '/Leave_Module/leave_reports_list' }
 
       ]
     }
@@ -60,20 +71,33 @@ export default function Navbar() {
     <nav className={classes.navbar}>
       <div className={classes.header}>
         <Group justify="space-between">
-          <a className="navbar-brand" href="" style={{ color: "black" }}>
-            {auth.user ? `Welcome, ${auth.user.name}` : null}
-          </a>
+          <img className={classes.image} src="/images/WINTERPINE.png" alt="aa" />
         </Group>
       </div>
+
+
       <ScrollArea className={classes.links}>
         <div className={classes.linksInner}>{links}</div>
       </ScrollArea>
+
+
       {auth.user ?
         <div className={classes.footer}>
-          <a href="#" className={classes.link} onClick={handleLogout} >
-            <IconLogout className={classes.linkIcon} stroke={1.5} />
-            <span style={{ color: "black" }}>Logout</span>
-          </a>
+
+          <UnstyledButton className={classes.user}>
+            <Group>
+              <div style={{ flex: 1, marginLeft: "5px" }}>
+                <Text size="lg" fw={500}>
+                  {auth.user.name}
+                </Text>
+              </div>
+              <a className={classes.link} style={{ textDecoration: "none" }} onClick={handleLogout} >
+                <IconLogout className={classes.linkIcon} stroke={1.5} />
+                <span style={{ color: "black", marginRight: "10px" }}>Logout</span>
+              </a>
+            </Group>
+          </UnstyledButton>
+
         </div> : null}
 
     </nav>

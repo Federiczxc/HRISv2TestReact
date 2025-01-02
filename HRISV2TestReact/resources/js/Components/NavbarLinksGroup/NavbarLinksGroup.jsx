@@ -12,9 +12,9 @@ export function LinksGroup({ icon: Icon, label, initiallyOpened, link, links }) 
                 className={classes.link}
                 href={nestedLink.link}
                 key={nestedLink.label}
-                style={{ marginLeft: "15px" }}
+                style={{ marginLeft: "18px" }}
             >
-                <span style={{marginLeft: "10px"}}>{nestedLink.label}</span>
+                <span style={{ marginLeft: "10px" }}>{nestedLink.label}</span>
             </Text>
         ))
         : null;
@@ -24,7 +24,7 @@ export function LinksGroup({ icon: Icon, label, initiallyOpened, link, links }) 
             className={classes.control}
             component={!hasLinks ? 'a' : 'div'}
             href={!hasLinks ? link : undefined}
-            style={{marginTop:20, paddingLeft: 5}}
+            style={{ marginTop: 20, paddingLeft: 5 }}
         >
             <Group justify="space-between" gap={0}>
                 <Box style={{ display: 'flex', alignItems: 'center' }}>

@@ -321,110 +321,110 @@ class OBController extends Controller
             'OBReportsList' => $appr_list,
         ]);
     }
-    public function uploadOBReport(Request $request)
-    {
-        $currentUser = Auth::user()->emp_no;
+        public function uploadOBReport(Request $request)
+        {
+            $currentUser = Auth::user()->emp_no;
 
-        $request->validate([
-            'ob_upload' => 'required|array'
-        ]);
-        $csvData = $request->input('ob_upload');
-        $errors = [];
-        $expectedColumns = [
-            'Employee No.',
-            'Employee Name',
-            'Date From',
-            'Time From',
-            'Date To',
-            'Time To',
-            'Destination',
-            'Person To Meet',
-            'Purpose',
-            'Date Filed',
-            'Approved By',
-            'Approved Date',
+            $request->validate([
+                'ob_upload' => 'required|array'
+            ]);
+            $csvData = $request->input('ob_upload');
+            $errors = [];
+            $expectedColumns = [
+                'Employee No.',
+                'Employee Name',
+                'Date From',
+                'Time From',
+                'Date To',
+                'Time To',
+                'Destination',
+                'Person To Meet',
+                'Purpose',
+                'Date Filed',
+                'Approved By',
+                'Approved Date',
 
-        ];
-        $columns = array_keys($csvData[0]);
-        foreach ($expectedColumns as $expectedColumn) {
-            if (!in_array($expectedColumn, $columns)) {
-                $errors[] = "Column '$expectedColumn' is missing or misspelled in the uploaded file.";
+            ];
+            $columns = array_keys($csvData[0]);
+            foreach ($expectedColumns as $expectedColumn) {
+                if (!in_array($expectedColumn, $columns)) {
+                    $errors[] = "Column '$expectedColumn' is missing or misspelled in the uploaded file.";
+                    return response()->json(['errorWarning' => $errors], 422);
+                }
+            }
+            foreach ($csvData as $index => $row) {
+                $index = $index + 1;
+                $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+                $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
+                $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+                $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
+                $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
+                $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+                $obDays = $dateFrom->diffInDays($dateTo);
+                Log::info($csvData);
+
+                if (!$employeeNo) {
+                    $errors[] = "$index Employee No '{$row['Employee No.']}' not found in the database.";
+                }
+
+                if (!$employeeName) {
+                    $errors[] = "$index Employee Name '{$row['Employee Name']}' not found in the database.";
+                }
+
+                if ($employeeNo && $employeeName && $employeeNo->name !== $row['Employee Name']) {
+                    $errors[] = "$index Employee No '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'";
+                }
+                if ($approved_by) {
+
+                    if ($employeeName && $approved_by->name !== $employeeName->first_apprv_name && $approved_by->name !== $employeeName->sec_apprv2_name) {
+                        $errors[] = "$index '{$row['Approved By']}' is not the approver for Employee '{$row['Employee Name']}'";
+                    }
+                    if ($employeeName && $approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv2_no) {
+                        $errors[] = "$index '{$row['Approved By']}' does not match the first or second appr's emp_no for Employee '{$row['Employee Name']}'";
+                    }
+                    if ($approved_by->is_approver == 0) {
+                        $errors[] = "$index '{$row['Approved By']}' is not set as an approver";
+                    }
+                }
+                if (!$approved_by) {
+                    $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
+                }
+            }
+            if (!empty($errors)) {
                 return response()->json(['errorWarning' => $errors], 422);
             }
+            foreach ($csvData as $index => $row) {
+                $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
+                //validate employee name and emp no
+                $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
+                $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
+                $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
+                $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
+                $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
+                $obDays = $dateFrom->diffInDays($dateTo);
+                OBModel::create([
+                    'emp_no' => $employeeName->emp_no,
+                    'ob_no' => 'Manual',
+                    'ob_status_id' => 2,
+                    'ob_type_id' => 1,
+                    'date_from' => $dateFrom,
+                    'date_to' =>  $dateTo,
+                    'time_from' => $row['Time From'],
+                    'time_to' => $row['Time To'],
+                    'ob_days' => $obDays,
+                    'destination' => $row['Destination'],
+                    'person_to_meet' => $row['Person To Meet'],
+                    'ob_purpose' => $row['Purpose'],
+                    'first_apprv_no' => $employeeName->first_apprv_no,
+                    'sec_apprv_no' => $employeeName->sec_apprv2_no,
+                    'approved_by' => $approved_by->emp_no,
+                    'approved_date' => $approvedDate,
+                    'created_by' => $currentUser,
+                    'created_date' => $row['Date Filed'],
+                    'updated_by' => $currentUser,
+                    'updated_date' => Carbon::now(),
+                ]);
+            }
+            return response()->json(['message' => 'Entry Successful']);
         }
-        foreach ($csvData as $index => $row) {
-            $index = $index + 1;
-            $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
-            $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
-            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
-            $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
-            $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
-            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
-            $obDays = $dateFrom->diffInDays($dateTo);
-            Log::info($csvData);
-
-            if (!$employeeNo) {
-                $errors[] = "$index Employee No '{$row['Employee No.']}' not found in the database.";
-            }
-
-            if (!$employeeName) {
-                $errors[] = "$index Employee Name '{$row['Employee Name']}' not found in the database.";
-            }
-
-            if ($employeeNo && $employeeName && $employeeNo->name !== $row['Employee Name']) {
-                $errors[] = "$index Employee No '{$row['Employee No.']}' does not match the name '{$row['Employee Name']}'";
-            }
-            if ($approved_by) {
-
-                if ($employeeName && $approved_by->name !== $employeeName->first_apprv_name && $approved_by->name !== $employeeName->sec_apprv2_name) {
-                    $errors[] = "$index '{$row['Approved By']}' is not the approver for Employee '{$row['Employee Name']}'";
-                }
-                if ($employeeName && $approved_by->emp_no !== $employeeName->first_apprv_no && $approved_by->emp_no !== $employeeName->sec_apprv2_no) {
-                    $errors[] = "$index '{$row['Approved By']}' does not match the first or second appr's emp_no for Employee '{$row['Employee Name']}'";
-                }
-                if ($approved_by->is_approver == 0) {
-                    $errors[] = "$index '{$row['Approved By']}' is not set as an approver";
-                }
-            }
-            if (!$approved_by) {
-                $errors[] = "$index '{$row['Approved By']}' doesn't exist in the database";
-            }
-        }
-        if (!empty($errors)) {
-            return response()->json(['errorWarning' => $errors], 422);
-        }
-        foreach ($csvData as $index => $row) {
-            $employeeName = User::where('name', 'LIKE', '%' . $row['Employee Name'] . '%')->first();
-            //validate employee name and emp no
-            $employeeNo = User::where('emp_no', $row['Employee No.'])->first();
-            $approved_by = User::where('name', 'LIKE', '%' . $row['Approved By'] . '%')->first();
-            $dateFrom = Carbon::parse($row['Date From'])->setTimezone('Asia/Manila');
-            $dateTo = Carbon::parse($row['Date To'])->setTimezone('Asia/Manila');
-            $approvedDate = Carbon::parse($row['Approved Date'])->setTimezone('Asia/Manila');
-            $obDays = $dateFrom->diffInDays($dateTo);
-            OBModel::create([
-                'emp_no' => $employeeName->emp_no,
-                'ob_no' => 'Manual',
-                'ob_status_id' => 2,
-                'ob_type_id' => 1,
-                'date_from' => $dateFrom,
-                'date_to' =>  $dateTo,
-                'time_from' => $row['Time From'],
-                'time_to' => $row['Time To'],
-                'ob_days' => $obDays,
-                'destination' => $row['Destination'],
-                'person_to_meet' => $row['Person To Meet'],
-                'ob_purpose' => $row['Purpose'],
-                'first_apprv_no' => $employeeName->first_apprv_no,
-                'sec_apprv_no' => $employeeName->sec_apprv2_no,
-                'approved_by' => $approved_by->emp_no,
-                'approved_date' => $approvedDate,
-                'created_by' => $currentUser,
-                'created_date' => $row['Date Filed'],
-                'updated_by' => $currentUser,
-                'updated_date' => Carbon::now(),
-            ]);
-        }
-        return response()->json(['message' => 'Entry Successful']);
-    }
 }

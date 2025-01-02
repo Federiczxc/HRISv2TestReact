@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
 import Zoom from "react-medium-image-zoom";

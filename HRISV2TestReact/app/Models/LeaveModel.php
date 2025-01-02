@@ -4,25 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class OBModel extends Model
+class LeaveModel extends Model
 {
-    protected $table = 'hris_tk_ob';
-    protected $primaryKey = 'ob_id';
+    protected $table = 'hris_tk_leave';
+    protected $primaryKey = 'leave_id';
     protected $fillable = [
-        'ob_status_id',
-        'ob_no',
-        'mf_status_name',
-        'ob_type_id',
+        'leave_status_id',
+        'leave_no',
+        'leave_type_id',
         'emp_no',
-        'destination',
         'date_from',
-        'time_from',
         'date_to',
-        'time_to',
-        'ob_days',
-        'person_to_meet',
-        'ob_purpose',
-        'ob_attach',
+        'halfday',
+        'leave_days',
+        'reason',
+        'leave_attach',
         'appr_remarks',
         'first_apprv_no',
         'sec_apprv_no',
@@ -32,13 +28,12 @@ class OBModel extends Model
         'created_date',
         'updated_by',
         'updated_date',
+        'is_late',
     ];
     public $timestamps = false;
     protected $dates = [
         'date_from',
-        'time_from',
         'date_to',
-        'time_to',
         'approved_date',
         'created_date',
         'updated_date'
@@ -50,8 +45,12 @@ class OBModel extends Model
     }
     public function status()
     {
-        return $this->belongsTo(MFStatusModel::class, 'ob_status_id', 'mf_status_id');
+        return $this->belongsTo(MFStatusModel::class, 'leave_status_id', 'mf_status_id');
     }
 
-    
+    public function leavetype()
+    {
+        return $this->belongsTo(LeaveTypeModel::class, 'leave_type_id', 'leave_type_id');
+
+    }
 }

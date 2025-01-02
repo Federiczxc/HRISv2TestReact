@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OTController;
 use App\Http\Controllers\UTController;
+use App\Http\Controllers\LeaveController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -61,4 +62,17 @@ Route::post('/OB_Module/ob_reports_list', [OBController::class, 'uploadOBReport'
 //OT
 Route::get('/OT_Module/ot_entry/', [OTController::class, 'index'])->middleware('auth');
 Route::post('/OT_Module/ot_entry/', [OTController::class, 'OTEntry']);
+Route::post('/OT_Module/ot_entry/edit', [OTController::class, 'editOTRequest']);
 Route::post('/OT_Module/ot_entry/{id}', [OTController::class, 'spoilOTRequest']);
+Route::delete('/OT_Module/ot_entry/{id}', [OTController::class, 'deleteOTRequest'])->name('delete.ot');
+//OT APPR
+Route::get('/OT_Module/ot_appr_list', [OTController::class, 'OTApprList'])->middleware('auth')->name('otapprlist.show');
+Route::post('/OT_Module/ot_appr_list', [OTController::class, 'updateAll'])->name('otupdate.all');
+Route::post('/OT_Module/ot_appr_list/batch', [OTController::class, 'updateBatch'])->name('update.otbatch');
+Route::post('/OT_Module/ot_appr_list/edit', [OTController::class, 'editOTApprRequest']);
+//OT Reports
+Route::get('/OT_Module/ot_reports_list', [OTController::class, 'OTReportsList'])->middleware('auth')->name('otreports.show');
+
+//Leave
+Route::get('/Leave_Module/leave_entry/', [LeaveController::class, 'index'])->middleware('auth');
+Route::post('/Leave_Module/leave_entry/', [LeaveController::class, 'LeaveEntry']);

@@ -1,46 +1,48 @@
 import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/Layout/AppLayout";
 import dayjs from 'dayjs';
+import Zoom from "react-medium-image-zoom";
 import { router } from '@inertiajs/react'
-import { ActionIcon, Card, Container, Group, Text, Tabs, rem, Title, Table, Textarea, Modal, Box, Button, Select, Pagination, TextInput } from '@mantine/core';
-import { DateInput, TimeInput } from '@mantine/dates';
+import { ActionIcon, SimpleGrid, Card, Container, Group, Text, Radio, Tabs, rem, Title, Table, Image, Textarea, Modal, Box, Button, Select, Pagination, TextInput } from '@mantine/core';
+import { DateInput } from '@mantine/dates';
 import { IconClock, IconEye, IconEdit, IconTrash, IconCalendar, IconUpload, IconPhoto, IconX } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import { Dropzone } from '@mantine/dropzone';
 
-export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
+export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveList }) {
     const [values, setValues] = useState({
-        ot_type_id: '',
+        leave_type_id: '',
         date_from: '',
         date_to: '',
-        time_from: '',
-        time_to: '',
-        task_title: '',
-        task_done: '',
+        halfday: '',
+        leave_days: '',
+        reason: '',
+        leave_attach: '',
     });
     const [activePage, setActivePage] = useState(1);
     const itemsPerPage = 5;
-    const totalPages = Math.ceil(OTList.length / itemsPerPage);
-    const paginatedData = OTList.slice(
+    const totalPages = Math.ceil(LeaveList.length / itemsPerPage);
+    const paginatedData = LeaveList.slice(
         (activePage - 1) * itemsPerPage,
         activePage * itemsPerPage
     );
 
     const [activePage2, setActivePage2] = useState(1);
     const itemsPerPage2 = 5;
-    const totalPages2 = Math.ceil(spoiledOTList.length / itemsPerPage2);
-    const paginatedData2 = spoiledOTList.slice(
+    const totalPages2 = Math.ceil(spoiledLeaveList.length / itemsPerPage2);
+    const paginatedData2 = spoiledLeaveList.slice(
         (activePage2 - 1) * itemsPerPage2,
         activePage2 * itemsPerPage2
     );
-    const [selectedOT, setSelectedOT] = useState(viewOTRequest);
+    const [selectedLeave, setSelectedLeave] = useState(viewLeaveRequest);
 
 
-    const [tabValue, setTabValue] = useState("ot_entry_list");
+    const [tabValue, setTabValue] = useState("leave_entry_list");
 
     function handleSubmit(e) {
         e.preventDefault();
         console.log("ppasok", values);
-        router.post('/OT_Module/ot_entry', values, {
+        router.post('/Leave_Module/leave_entry', values, {
             onError: (errors) => {
                 console.error('Submission Errors:', errors);
                 notifications.show({
@@ -78,8 +80,8 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
 
             const minDate = today.subtract(1, 'month');
 
-            const dateFrom = updatedValues.date_from && updatedValues.time_from
-                ? dayjs(updatedValues.date_from).hour(updatedValues.time_from.split(':')[0]).minute(updatedValues.time_from.split(':')[1])
+            const dateFrom = updatedValues.date_from
+                ? dayjs(updatedValues.date_from)
                 : null;
 
             if (dateFrom && dateFrom.isBefore(minDate, 'day')) {
@@ -94,8 +96,8 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                 updatedValues.date_from = '';
             }
 
-            const dateTo = updatedValues.date_to && updatedValues.time_to
-                ? dayjs(updatedValues.date_to).hour(updatedValues.time_to.split(':')[0]).minute(updatedValues.time_to.split(':')[1])
+            const dateTo = updatedValues.date_to
+                ? dayjs(updatedValues.date_to)
                 : null;
 
             if (dateTo && dateTo.isBefore(minDate, 'day')) {
@@ -111,13 +113,32 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
             }
 
 
+            if (dateFrom && dateTo) {
+                const daysDiff = dateTo.diff(dateFrom, 'days');
+
+                let excludedSundays = 0;
+                let currentDate = dateFrom;
+
+                // Loop through the days between dateFrom and dateTo, excluding Sundays
+                while (currentDate.isBefore(dateTo) || currentDate.isSame(dateTo, 'day')) {
+                    if (currentDate.day() === 0) {
+                        excludedSundays++;
+                    }
+                    currentDate = currentDate.add(1, 'day');
+                }
+
+                // Calculate the final days count after excluding Sundays
+                let daysCount = Math.max(daysDiff - excludedSundays, 0);
+
+                updatedValues.leave_days = daysCount;
+            }
 
             return updatedValues;
         });
     }
 
-    function handleSelectedOTChange(name, value) {
-        setSelectedOT((prevValues) => {
+    function handleSelectedLeaveChange(name, value) {
+        setSelectedLeave((prevValues) => {
             const updatedValues = {
                 ...prevValues,
                 [name]: value,
@@ -163,11 +184,11 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
             return updatedValues;
         });
     }
-    function handleSpoil(otId) {
+    function handleSpoil(leaveId) {
         const updatedValue = {
-            ot_status_id: 4
+            leave_status_id: 4
         }
-        router.post(`/OT_Module/ot_entry/${otId}`, updatedValue, {
+        router.post(`/Leave_Module/leave_entry/${leaveId}`, updatedValue, {
             OnError: (errors) => {
                 notifications.show({
                     title: 'Error',
@@ -194,9 +215,9 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
 
         });
     }
-    function handleDelete(otId) {
-        console.log("del", otId);
-        router.delete(`/OT_Module/ot_entry/${otId}`, {
+    function handleDelete(leaveId) {
+        console.log("del", leaveId);
+        router.delete(`/Leave_Module/leave_entry/${leaveId}`, {
             onError: (errors) => {
                 notifications.show({
                     title: 'Error',
@@ -223,7 +244,61 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
         )
     }
 
+    const handleFileChange = (acceptedFiles) => {
 
+        if (acceptedFiles.length > 0) {
+            setValues((prevValues) => ({
+                ...prevValues,
+                leave_attach: acceptedFiles,
+            }));
+            console.log("Att", acceptedFiles);
+
+        }
+        else {
+            setSelectedLeave((prev) => ({
+                ...prev,
+                leave_attach: [],
+            }));
+        }
+    };
+    const handleRemoveFile = (fileToRemove) => {
+        setValues((prevValues) => ({
+            ...prevValues,
+            leave_attach: prevValues.leave_attach.filter((file) => file !== fileToRemove),
+        }));
+    };
+
+
+    const preview = values.leave_attach && Array.isArray(values.leave_attach) ? (
+        values.leave_attach.map((file) => (
+            <Zoom key={`${file.name}-${file.lastModified}`}>
+
+                <Box style={{ alignItems: "center" }}>
+
+                    {file.type.startsWith('image/') ? (
+                        <Image
+                            w={128}
+                            h={128}
+                            src={URL.createObjectURL(file)}
+                            onLoad={() => URL.revokeObjectURL(file)}
+                            alt={`Preview of ${file.name}`}
+                        />
+                    ) : (
+                        <Box style={{ width: 128, height: 128, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <Text size="xl" color="dimmed">File</Text>
+                        </Box>
+                    )}
+                    <Text truncate style={{ marginTop: '8px', textAlign: 'center' }}>
+                        {file.name}
+                    </Text>
+                    <Button color="red" size="xs" onClick={() => handleRemoveFile(file)}>
+                        <IconTrash />
+                    </Button>
+                </Box>
+            </Zoom>
+
+        ))
+    ) : null;
 
     const ref = useRef(null);
     const pickerControl = (<ActionIcon variant="subtle" color="gray" onClick={() => { var _a; return (_a = ref.current) === null || _a === void 0 ? void 0 : _a.showPicker(); }}>
@@ -238,15 +313,15 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
         e.preventDefault();
 
         const updatedFields = {
-            ot_no: selectedOT.ot_no,
-            date_from: selectedOT.date_from,
-            date_to: selectedOT.date_to,
-            time_from: selectedOT.time_from,
-            time_to: selectedOT.time_to,
-            task_title: selectedOT.task_title,
-            task_done: selectedOT.task_done,
+            leave_no: selectedLeave.leave_no,
+            leave_type_id: selectedLeave.leave_type_id,
+            date_from: selectedLeave.date_from,
+            date_to: selectedLeave.date_to,
+            halfday: selectedLeave.halfday,
+            reason: selectedLeave.reason,
+            leave_attach: selectedLeave.leave_attach,
         }
-        router.post('/OT_Module/ot_entry/edit', updatedFields, {
+        router.post('/Leave_Module/leave_entry/edit', updatedFields, {
             onError: (errors) => {
                 console.error('Submission Errors:', errors);
                 notifications.show({
@@ -271,15 +346,7 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
         });
 
     }
-    const formatTime = (time) => {
-        const timeParts = time.split(':');
-        const hours = parseInt(timeParts[0]);
-        const minutes = timeParts[1];
-        const isPM = hours >= 12;
-        const hours12 = hours % 12 || 12;
-        const period = isPM ? 'PM' : 'AM';
-        return `${hours12.toString().padStart(2, '0')}:${minutes} ${period}`;
-    };
+
 
     const formatDate = (date) => {
         if (!date) return '';
@@ -290,15 +357,15 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
         return `${year}-${month}-${day}`;
     };
 
-    const handleViewClick = (otId) => {
-        const otData = OTList.find((ot) => ot.ot_id === otId);
-        setSelectedOT(otData);
+    const handleViewClick = (leaveId) => {
+        const leaveData = LeaveList.find((leave) => leave.leave_id === leaveId);
+        setSelectedLeave(leaveData);
         open();
     }
 
-    const handleEditClick = (otId) => {
-        const otData = OTList.find((ot) => ot.ot_id === otId);
-        setSelectedOT(otData);
+    const handleEditClick = (leaveId) => {
+        const leaveData = LeaveList.find((leave) => leave.leave_id === leaveId);
+        setSelectedLeave(leaveData);
         open2();
     }
 
@@ -316,42 +383,40 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
             <Container fluid className="mt-5">
                 <Card withBorder>
                     <Box className="">
-                        <Button onClick={() => openForm()} color='green'> Create OT</Button>
+                        <Button onClick={() => openForm()} color='green'> Create Leave</Button>
                     </Box>
                     <Tabs color="lime" radius="xs" defaultValue="Entry" value={tabValue} onChange={setTabValue}>
                         <Tabs.List>
-                            <Tabs.Tab value="ot_entry_list">
-                                OT Entry List
+                            <Tabs.Tab value="leave_entry_list">
+                                Leave Entry List
                             </Tabs.Tab>
-                            <Tabs.Tab value="otspoiled">
-                                OT Spoiled
+                            <Tabs.Tab value="leavespoiled">
+                                Leave Spoiled
                             </Tabs.Tab>
                         </Tabs.List>
-                        <Modal size="auto" opened={openedForm} onClose={closeForm} title={<strong>Create OT </strong>} closeOnClickOutside={false} centered>
+                        <Modal size="auto" opened={openedForm} onClose={closeForm} title={<strong>Create Leave </strong>} closeOnClickOutside={false} centered>
                             <form onSubmit={handleSubmit}>
                                 <Box style={{ display: "flex", flexiwrap: "wrap" }}>
                                     <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
                                         <Select
                                             placeholder="Pick status"
-                                            label="Overtime Type"
-                                            name="ot_type_id"
-                                            value={values.ot_type_id || ''}
-                                            onChange={(value) => handleChange('ot_type_id', value)}
+                                            label="Leave Type"
+                                            name="leave_type_id"
+                                            value={values.leave_type_id || ''}
+                                            onChange={(value) => handleChange('leave_type_id', value)}
                                             data={[
-                                                { value: '1', label: 'OVERTIME-IN / OVERTIME-OUT' },
-                                                { value: '2', label: 'EARLY TIME-IN / EARLY TIME-OUT' },
-                                                { value: '3', label: 'DAY-OFF OVERTIME' },
-                                                { value: '4', label: 'LATE FILING' }
+                                                { value: '1', label: 'Vacation Leave' },
+                                                { value: '2', label: 'Sick Leave' },
+                                                { value: '3', label: 'Maternity Leave' },
+                                                { value: '4', label: 'Paternity Leave' },
+                                                { value: '5', label: 'Magna Carta Leave' },
+                                                { value: '6', label: 'Solo Parent Leave' },
+                                                { value: '8', label: 'Emergency Leave' },
+                                                { value: '9', label: 'Birthday Leave' },
+                                                { value: '10', label: 'Flood Leave' }
                                             ]}
+                                            style={{ width: 366 }}
                                         />
-                                        <TextInput
-                                            required
-                                            name="task_title"
-                                            value={values.task_title}
-                                            label="Task Title"
-                                            placeholder="Task Title"
-                                            style={{ width: 500 }}
-                                            onChange={(event) => handleChange(event.target.name, event.target.value)} />
                                         <Box style={{ display: "flex", gap: "1rem" }}>
                                             <DateInput
                                                 required
@@ -395,6 +460,7 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                                 }}
 
                                             />
+
                                             <DateInput
                                                 required
                                                 name="date_to"
@@ -424,37 +490,88 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                                     }
                                                 }}
                                             />
-                                        </Box>
 
+                                        </Box>
                                         <Box style={{ display: "flex", gap: "1rem" }}>
-                                            <TimeInput
-                                                required
-                                                label="Time From"
-                                                name="time_from"
-                                                value={values.time_from}
-                                                ref={ref}
-                                                rightSection={pickerControl}
-                                                style={{ width: 175 }}
-                                                onChange={(event) => handleChange(event.target.name, event.target.value)} />
 
-                                            <TimeInput label="Time To"
-                                                required
-                                                name="time_to"
-                                                value={values.time_to}
-                                                ref={ref2}
-                                                rightSection={pickerControl2}
-                                                style={{ width: 175 }}
-                                                onChange={(event) => handleChange(event.target.name, event.target.value)} />
 
+                                            <Radio.Group
+                                                name="halfday"
+                                                label="Halfday"
+                                                value={values.halfday}
+                                                onChange={(value) => handleChange('halfday', value)}
+                                                disabled={values.date_from !== values.date_to || !values.date_from || !values.date_to}
+
+                                            >
+                                                <Group >
+                                                    <Radio value="AM" label="AM" disabled={values.date_from !== values.date_to || !values.date_from || !values.date_to} />
+                                                    <Radio value="PM" label="PM" disabled={values.date_from !== values.date_to || !values.date_from || !values.date_to} />
+                                                </Group>
+                                            </Radio.Group>
+                                            < TextInput
+                                                label="Leave Days"
+                                                name="leave_days"
+                                                size="sm"
+                                                value={values.leave_days}
+                                                disabled
+                                                style={{ width: 100 }
+                                                }
+                                            />
                                         </Box>
-                                        <TextInput
+                                        <Textarea
                                             required
-                                            label="Task Done"
-                                            name="task_done"
-                                            value={values.task_done}
-                                            placeholder="Task Done"
-                                            style={{ width: 500 }}
+                                            label="Reason For Leave"
+                                            name="reason"
+                                            value={values.reason}
+                                            placeholder=""
+                                            style={{ width: 300 }}
                                             onChange={(event) => handleChange(event.target.name, event.target.value)} />
+                                    </Box>
+                                    <Box style={{ flex: "1 1 35%", marginLeft: 10 }}>
+                                        <Dropzone
+                                            onDrop={handleFileChange}
+                                            onReject={(leave_attach) => console.log('rejected files', leave_attach)}
+                                            maxSize={5 * 1024 ** 2}
+                                            multiple
+                                            style={{ width: "100%" }}>
+                                            <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
+                                                <Dropzone.Accept>
+                                                    <IconUpload
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Accept>
+                                                <Dropzone.Reject>
+                                                    <IconX
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Reject>
+                                                <Dropzone.Idle>
+                                                    <IconPhoto
+                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
+                                                        stroke={1.5}
+                                                    />
+                                                </Dropzone.Idle>
+
+                                                <Box>
+                                                    <Text size="xl" inline>
+                                                        Drag image or document here
+                                                    </Text>
+                                                    <Text size="sm" c="dimmed" inline mt={7}>
+                                                        Each file should not exceed 5mb. Image will be previewed.
+                                                    </Text>
+                                                </Box>
+                                            </Group>
+                                        </Dropzone>
+
+                                        <Box>
+                                            <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                {preview}
+                                            </SimpleGrid>
+                                        </Box>
+
+
                                     </Box>
                                 </Box>
                                 <Box style={{ display: "flex", justifyContent: "flex-end" }}><Button color="teal" type="submit"> Submit </Button>
@@ -462,49 +579,46 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                             </form>
 
                         </Modal>
-                        <Tabs.Panel value="ot_entry_list">
+                        <Tabs.Panel value="leave_entry_list">
                             <Card>
                                 <Card.Section>
-                                    OT Entry List
+                                    Leave Entry List
                                 </Card.Section>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
                                         <Table.Tr>
                                             <Table.Th w={75}> Reference No.</Table.Th>
+                                            <Table.Th> Leave Type</Table.Th>
                                             <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
-                                            <Table.Th> Time From</Table.Th>
-                                            <Table.Th> Time To</Table.Th>
-                                            <Table.Th> Task Title</Table.Th>
-                                            <Table.Th > Task Done</Table.Th>
+                                            <Table.Th> Reason</Table.Th>
+                                            <Table.Th> Half Day</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Date File</Table.Th>
                                             <Table.Th> Action</Table.Th>
                                         </Table.Tr>
                                     </Table.Thead>
                                     <Table.Tbody>
-                                        {OTList && OTList.length > 0 ? (
-                                            paginatedData.map((ot) => {
+                                        {LeaveList && LeaveList.length > 0 ? (
+                                            paginatedData.map((leave) => {
                                                 return (
-                                                    <Table.Tr key={ot.ot_id}>
-                                                        <Table.Td > {ot.ot_no}</Table.Td>
-                                                        <Table.Td> {ot.user?.name}</Table.Td>
-                                                        <Table.Td> {ot.date_from}</Table.Td>
-                                                        <Table.Td> {ot.date_to}</Table.Td>
-                                                        <Table.Td> {formatTime(ot.time_from)} </Table.Td>
-                                                        <Table.Td> {formatTime(ot.time_to)} </Table.Td>
-                                                        <Table.Td> {ot.task_title}</Table.Td>
-                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {ot.task_done}</Table.Td>
-                                                        <Table.Td> {ot.status?.mf_status_name}</Table.Td>
-                                                        <Table.Td> {formatDate(ot.created_date)}</Table.Td>
+                                                    <Table.Tr key={leave.leave_id}>
+                                                        <Table.Td > {leave.leave_no}</Table.Td>
+                                                        <Table.Td> {leave.user?.name}</Table.Td>
+                                                        <Table.Td> {leave.date_from}</Table.Td>
+                                                        <Table.Td> {leave.date_to}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {leave.reason}</Table.Td>
+                                                        <Table.Td> {leave.halfday}</Table.Td>
+                                                        <Table.Td> {leave.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td> {formatDate(leave.created_date)}</Table.Td>
                                                         <Table.Td>
-                                                            <ActionIcon onClick={() => handleViewClick(ot.ot_id)} ><IconEye /></ActionIcon>
-                                                            {!(ot.ot_status_id === 2 || ot.ot_status_id === 3 || ot.status?.mf_status_name === 'Approved' || ot.status?.mf_status_name === 'Disapproved') && (
-                                                                <ActionIcon onClick={() => handleEditClick(ot.ot_id)} color="yellow" className="ms-2"><IconEdit /></ActionIcon>
+                                                            <ActionIcon onClick={() => handleViewClick(leave.leave_id)} ><IconEye /></ActionIcon>
+                                                            {!(leave.leave_status_id === 2 || leave.leave_status_id === 3 || leave.status?.mf_status_name === 'Approved' || leave.status?.mf_status_name === 'Disapproved') && (
+                                                                <ActionIcon onClick={() => handleEditClick(leave.leave_id)} color="yellow" className="ms-2"><IconEdit /></ActionIcon>
                                                             )}
-                                                            {!(ot.ot_status_id === 2 || ot.ot_status_id === 3 || ot.status?.mf_status_name === 'Approved' || ot.status?.mf_status_name === 'Disapproved') && (
-                                                                <ActionIcon onClick={() => handleSpoil(ot.ot_id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
+                                                            {!(leave.leave_status_id === 2 || leave.leave_status_id === 3 || leave.status?.mf_status_name === 'Approved' || leave.status?.mf_status_name === 'Disapproved') && (
+                                                                <ActionIcon onClick={() => handleSpoil(leave.leave_id)} color="red" className="ms-2"><IconTrash /></ActionIcon>
 
                                                             )}
                                                         </Table.Td>
@@ -519,34 +633,29 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                 </Table>
                                 <Pagination total={totalPages} value={activePage} onChange={setActivePage} color="lime.4" mt="sm" />
 
-                                <Modal size="l" opened={opened} onClose={close} title="OT Request Details">
-                                    {selectedOT && (
+                                <Modal size="l" opened={opened} onClose={close} title="Leave Request Details">
+                                    {selectedLeave && (
                                         <>
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <TextInput label="Reference No." value={selectedOT.ot_no || ''} disabled />
-                                                <Select label="OT Status" placeholder={selectedOT.status?.mf_status_name || ''} disabled />
+                                                <TextInput label="Reference No." value={selectedLeave.leave_no || ''} disabled />
+                                                <Select label="Leave Status" placeholder={selectedLeave.status?.mf_status_name || ''} disabled />
+
                                             </Box>
 
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <DateInput label="OT Date From" placeholder={selectedOT.date_from || ''} disabled />
-                                                <DateInput label="OT Date To" placeholder={selectedOT.date_to || ''} disabled />
+                                                <DateInput label="OT Date From" placeholder={selectedLeave.date_from || ''} disabled />
+                                                <DateInput label="OT Date To" placeholder={selectedLeave.date_to || ''} disabled />
                                             </Box>
 
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <TextInput label="OT Time From" value={formatTime(selectedOT.time_from) || ''} disabled />
-                                                <TextInput label="OT Time To" value={formatTime(selectedOT.time_to) || ''} disabled />
-                                            </Box>
-
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <TextInput label="Task Title" value={selectedOT.task_title || ''} disabled />
-                                                <TextInput label="Task Done" value={selectedOT.task_done || ''} disabled />
+                                                <TextInput label="Reason For Leave" value={selectedLeave.reason || ''} disabled />
                                             </Box>
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <DateInput label="Date Filed" placeholder={formatDate(selectedOT.created_date) || ''} disabled />
+                                                <DateInput label="Date Filed" placeholder={formatDate(selectedLeave.created_date) || ''} disabled />
                                             </Box>
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }} className="mb-5 " >
-                                                <TextInput label="Approved by" placeholder={selectedOT.approver_name || ''} disabled />
-                                                <TextInput label="Approved Date" placeholder={selectedOT.approved_date || ''} disabled />
+                                                <TextInput label="Approved by" placeholder={selectedLeave.approver_name || ''} disabled />
+                                                <TextInput label="Approved Date" placeholder={selectedLeave.approved_date || ''} disabled />
                                             </Box>
 
                                         </>
@@ -554,25 +663,25 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                 </Modal>
                                 <Modal size="xl" opened={editOpened} onClose={close2} title="Edit Request Details" centered>
                                     <form onSubmit={handleEditSubmit}>
-                                        {selectedOT && (
+                                        {selectedLeave && (
                                             <>
                                                 <TextInput
                                                     label="Reference No."
-                                                    value={selectedOT.ot_no || ''}
+                                                    value={selectedLeave.leave_no || ''}
                                                     disabled
                                                 />
                                                 <Select
-                                                    label="OT Status"
-                                                    placeholder={selectedOT.status?.mf_status_name || ''}
+                                                    label="Leave Status"
+                                                    placeholder={selectedLeave.status?.mf_status_name || ''}
                                                     disabled
                                                 />
 
                                                 <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                                     <DateInput
                                                         name="date_from"
-                                                        value={selectedOT.date_from ? new Date(selectedOT.date_from) : null}
+                                                        value={selectedLeave.date_from ? new Date(selectedLeave.date_from) : null}
                                                         label="Date From"
-                                                        placeholder={selectedOT.date_from || ''}
+                                                        placeholder={selectedLeave.date_from || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
                                                         onChange={(value) => {
@@ -580,7 +689,7 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
 
                                                                 const selectedDate = new Date(value);
                                                                 const today = new Date();
-                                                                const dateTo = new Date(selectedOT.date_to);
+                                                                const dateTo = new Date(selectedLeave.date_to);
                                                                 today.setHours(0, 0, 0, 0);
                                                                 if (selectedDate < today) {
                                                                     notifications.show({
@@ -593,89 +702,57 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                                                 }
 
                                                                 if (selectedDate > dateTo) {
-                                                                    handleSelectedOTChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
 
-                                                                    handleSelectedOTChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
                                                                 } else {
-                                                                    handleSelectedOTChange("date_from", dayjs(value).format('YYYY-MM-DD'))
-                                                                    if (!selectedOT.date_to) {
-                                                                        handleSelectedOTChange("date_to", dayjs(value).format('YYYY-MM-DD'));
+                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                    if (!selectedLeave.date_to) {
+                                                                        handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'));
                                                                     }
                                                                 }
                                                             } else {
-                                                                handleSelectedOTChange("date_from", '');
-                                                                handleSelectedOTChange("date_to", '');
+                                                                handleSelectedLeaveChange("date_from", '');
+                                                                handleSelectedLeaveChange("date_to", '');
                                                             }
                                                         }}
                                                     />
                                                     <DateInput
                                                         name="date_to"
-                                                        value={selectedOT.date_to ? new Date(selectedOT.date_to) : null}
+                                                        value={selectedLeave.date_to ? new Date(selectedLeave.date_to) : null}
                                                         label="Date To"
-                                                        placeholder={selectedOT.date_to || ''}
+                                                        placeholder={selectedLeave.date_to || ''}
                                                         rightSection={<IconCalendar />}
                                                         style={{ flex: 1 }}
                                                         onChange={(value) => {
                                                             if (value) {
-                                                                const dateFrom = new Date(selectedOT.date_from);
+                                                                const dateFrom = new Date(selectedLeave.date_from);
                                                                 const selectedDate = new Date(value);
                                                                 if (selectedDate < dateFrom) {
-                                                                    handleSelectedOTChange("date_from", dayjs(value).format('YYYY-MM-DD'));
-                                                                    handleSelectedOTChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
 
 
                                                                 } else {
-                                                                    handleSelectedOTChange("date_to", dayjs(value).format('YYYY-MM-DD'))
-                                                                    if (!selectedOT.date_to) {
-                                                                        handleSelectedOTChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                    if (!selectedLeave.date_to) {
+                                                                        handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
                                                                     }
                                                                 }
                                                             }
                                                             else {
-                                                                handleSelectedOTChange("date_to", '');
+                                                                handleSelectedLeaveChange("date_to", '');
                                                             }
                                                         }}
                                                     />
 
                                                 </Box>
 
-                                                <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                    <TimeInput
-                                                        label="Time From"
-                                                        name="time_from"
-                                                        value={selectedOT.time_from}
-                                                        placeholder={selectedOT.time_from}
-                                                        ref={ref}
-                                                        rightSection={pickerControl}
-                                                        style={{ flex: 1 }}
-                                                        onChange={(event) => handleSelectedOTChange('time_from', event.target.value)}
-                                                    />
-                                                    <TimeInput
-                                                        label="Time To"
-                                                        name="time_to"
-                                                        value={selectedOT.time_to}
-                                                        placeholder={selectedOT.time_to}
-                                                        ref={ref2}
-                                                        rightSection={pickerControl2}
-                                                        style={{ flex: 1 }}
-                                                        onChange={(event) => handleSelectedOTChange('time_to', event.target.value)}
-                                                    />
-                                                </Box>
-
-
                                                 <TextInput
-                                                    label="Task Title"
-                                                    value={selectedOT.task_title || ''}
+                                                    label="Reason For Leave"
+                                                    value={selectedLeave.reason || ''}
                                                     onChange={(e) =>
-                                                        setSelectedOT({ ...selectedOT, task_title: e.target.value })
-                                                    }
-                                                    style={{ marginTop: '1rem' }}
-                                                />
-                                                <TextInput
-                                                    label="Task Done"
-                                                    value={selectedOT.task_done || ''}
-                                                    onChange={(e) =>
-                                                        setSelectedOT({ ...selectedOT, task_done: e.target.value })
+                                                        setSelectedLeave({ ...selectedLeave, reason: e.target.value })
                                                     }
                                                     style={{ marginTop: '1rem' }}
                                                 />
@@ -694,10 +771,10 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
 
                             </Card>
                         </Tabs.Panel>
-                        <Tabs.Panel value="otspoiled">
+                        <Tabs.Panel value="leavespoiled">
                             <Card>
                                 <Card.Section>
-                                    OT Spoiled
+                                    Leave Spoiled
                                 </Card.Section>
                                 <Table striped highlightOnHover>
                                     <Table.Thead>
@@ -706,33 +783,29 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                             <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
-                                            <Table.Th> Time From</Table.Th>
-                                            <Table.Th> Time To</Table.Th>
-                                            <Table.Th> Task Title</Table.Th>
-                                            <Table.Th> Task Done</Table.Th>
+                                            <Table.Th> Halfday</Table.Th>
+                                            <Table.Th> Reason</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Deleted on</Table.Th>
                                             <Table.Th> Action</Table.Th>
                                         </Table.Tr>
                                     </Table.Thead>
                                     <Table.Tbody>
-                                        {spoiledOTList && spoiledOTList.length > 0 ? (
-                                            paginatedData2.map((ot) => {
+                                        {spoiledLeaveList && spoiledLeaveList.length > 0 ? (
+                                            paginatedData2.map((leave) => {
                                                 return (
-                                                    <Table.Tr key={ot.ot_id}>
-                                                        <Table.Td> {ot.ot_no}</Table.Td>
-                                                        <Table.Td> {ot.user?.name}</Table.Td>
-                                                        <Table.Td> {ot.date_from}</Table.Td>
-                                                        <Table.Td> {ot.date_to}</Table.Td>
-                                                        <Table.Td> {formatTime(ot.time_from)} </Table.Td>
-                                                        <Table.Td>  {formatTime(ot.time_to)} </Table.Td>
-                                                        <Table.Td> {ot.task_title}</Table.Td>
-                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {ot.task_done}</Table.Td>
-                                                        <Table.Td> {ot.status?.mf_status_name}</Table.Td>
-                                                        <Table.Td> {formatDate(ot.updated_date)}</Table.Td>
+                                                    <Table.Tr key={leave.leave_id}>
+                                                        <Table.Td> {leave.leave_no}</Table.Td>
+                                                        <Table.Td> {leave.user?.name}</Table.Td>
+                                                        <Table.Td> {leave.date_from}</Table.Td>
+                                                        <Table.Td> {leave.date_to}</Table.Td>
+                                                        <Table.Td> {leave.halday}</Table.Td>
+                                                        <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {leave.reason}</Table.Td>
+                                                        <Table.Td> {leave.status?.mf_status_name}</Table.Td>
+                                                        <Table.Td> {formatDate(leave.updated_date)}</Table.Td>
                                                         <Table.Td>
-                                                            {!(ot.ot_status_id === 2 || ot.ot_status_id === 3 || ot.status?.mf_status_name === 'Approved' || ot.status?.mf_status_name === 'Disapproved') && (
-                                                                <Button onClick={() => handleDelete(ot.ot_id)} color="red" className="ms-2"><IconTrash /></Button>
+                                                            {!(leave.leave_status_id === 2 || leave.leave_status_id === 3 || leave.status?.mf_status_name === 'Approved' || leave.status?.mf_status_name === 'Disapproved') && (
+                                                                <Button onClick={() => handleDelete(leave.leave_id)} color="red" className="ms-2"><IconTrash /></Button>
                                                             )}
                                                         </Table.Td>
                                                     </Table.Tr>

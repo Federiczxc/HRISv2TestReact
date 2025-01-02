@@ -51,6 +51,38 @@ return new class extends Migration
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
         });
+
+        Schema::table('hris_tk_ot', function (Blueprint $table) {
+            $table->foreign('emp_no')
+                ->references('emp_no')->on('users')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
+
+            $table->foreign('first_apprv_no')
+                ->references('emp_no')->on('users');
+
+            $table->foreign('sec_apprv_no')
+                ->references('emp_no')->on('users');
+
+            $table->foreign('ot_status_id')
+                ->references('mf_status_id')->on('hris_mf_status')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
+        });
+        Schema::table('hris_tk_leave', function (Blueprint $table) {
+            $table->foreign('emp_no')
+                ->references('emp_no')->on('users')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
+
+            $table->foreign('first_apprv_no')
+                ->references('emp_no')->on('users');
+
+            $table->foreign('sec_apprv_no')
+                ->references('emp_no')->on('users');
+
+           
+        });
     }
 
     /**
