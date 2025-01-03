@@ -544,10 +544,18 @@ export default function ot_entry({ OTList, viewOTRequest, spoiledOTList }) {
                                             <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                                 <DateInput label="Date Filed" placeholder={formatDate(selectedOT.created_date) || ''} disabled />
                                             </Box>
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }} className="mb-5 " >
-                                                <TextInput label="Approved by" placeholder={selectedOT.approver_name || ''} disabled />
-                                                <TextInput label="Approved Date" placeholder={selectedOT.approved_date || ''} disabled />
-                                            </Box>
+                                            {
+                                                selectedOT.approved_date && selectedOT.approver_name ? (
+                                                    <>
+                                                        < Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }} className="mb-5 " >
+                                                            <TextInput label="Approved by" placeholder={selectedOT.approver_name || ''} disabled />
+                                                            <TextInput label="Approved Date" placeholder={selectedOT.approved_date || ''} disabled />
+                                                        </Box>
+                                                    </>
+                                                ) : null
+
+                                            }
+
 
                                         </>
                                     )}

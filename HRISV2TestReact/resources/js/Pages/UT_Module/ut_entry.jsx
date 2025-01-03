@@ -346,10 +346,25 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                             <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
 
                                             <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
+                                            {
+                                                selectedUT.approver_name && selectedUT.approved_date ? (
+                                                    <>
+                                                        {/* Render only if both values are not null or undefined */}
+                                                        <TextInput
+                                                            label="Approved by"
+                                                            placeholder={selectedUT.approver_name || 'Not provided'}
+                                                            disabled
+                                                        />
 
-                                            <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
+                                                        <DateInput
+                                                            label="Approved Date"
+                                                            placeholder={selectedUT.approved_date ? formatDate(selectedUT.approved_date) : 'Not provided'}
+                                                            disabled
+                                                        />
+                                                    </>
+                                                ) : null // If either is null/undefined, do not render anything
+                                            }
 
-                                            <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
                                         </>
                                     )}
                                 </Modal>
@@ -447,25 +462,7 @@ export default function ut_entry({ UTList, viewUTRequest, spoiledUTList }) {
                                     {/* Pagination */}
 
                                 </Table>
-                                <Modal opened={opened} onClose={close} title="UT Request Details" centered>
-                                    {selectedUT && (
-                                        <>
-                                            <TextInput label="Reference No." value={selectedUT.ut_no || ''} disabled />
-                                            <Select label="UT Status" placeholder={selectedUT.status?.mf_status_name || ''} disabled />
-
-                                            <DateInput label="UT Date Requested" placeholder={selectedUT.ut_date || ''} disabled />
-
-                                            <TextInput label="UT Time Requested" placeholder={selectedUT.ut_time ? formatTime(selectedUT.ut_time) : ''} disabled />
-                                            <Textarea label="UT Reason" value={selectedUT.ut_reason || ''} disabled />
-
-                                            <DateInput label="Date Filed" placeholder={formatDate(selectedUT.created_date) || ''} disabled />
-
-                                            <TextInput label="Approved by" placeholder={selectedUT.approver_name} disabled />
-
-                                            <DateInput label="Approved Date" placeholder={formatDate(selectedUT.approved_date)} disabled />
-                                        </>
-                                    )}
-                                </Modal>
+                               
                             </Card>
                         </Tabs.Panel>
                     </Tabs>

@@ -27,7 +27,6 @@ Route::post('/register', [UserController::class, 'store']);
 Route::get('/UT_Module/ut_dashboard', [UserController::class, 'DisplayUTDashboard'])->middleware('auth');
 Route::post('/UT_Module/ut_dashboard/setApprove/{id}', [UserController::class, 'setApprover'])->name('set.approve');
 Route::get('/UT_Module/ut_entry/', [UTController::class, 'index'])->middleware('auth')->name('ut.entry');
-Route::get('/UT_Module/ut_entry/{id}', [UTController::class, 'viewUTRequest'])->middleware('auth');
 Route::post('/UT_Module/ut_entry/edit', [UTController::class, 'editUTRequest']);
 Route::post('/UT_Module/ut_entry/{id}', [UTController::class, 'spoilUTRequest']);
 Route::delete('/UT_Module/ut_entry/{id}', [UTController::class, 'deleteUTRequest'])->name('delete.ut');
@@ -76,3 +75,6 @@ Route::get('/OT_Module/ot_reports_list', [OTController::class, 'OTReportsList'])
 //Leave
 Route::get('/Leave_Module/leave_entry/', [LeaveController::class, 'index'])->middleware('auth');
 Route::post('/Leave_Module/leave_entry/', [LeaveController::class, 'LeaveEntry']);
+Route::post('/Leave_Module/leave_entry/edit', [LeaveController::class, 'editLeaveRequest']);
+Route::post('/Leave_Module/leave_entry/{id}', [LeaveController::class, 'spoilLeaveRequest']);
+Route::delete('/Leave_Module/leave_entry/{id}', [LeaveController::class, 'deleteLeaveRequest'])->name('delete.leave');

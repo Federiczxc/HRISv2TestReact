@@ -365,7 +365,7 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
                 })
             }
         });
-        setValues(initialFormState);
+        setValues('');
         close2();
     }
     const formatTime = (time) => {
@@ -707,11 +707,18 @@ export default function ob_entry({ OBList, viewOBRequest, spoiledOBList }) {
 
                                             <TextInput label="Purpose" value={selectedOB.ob_purpose || ''} disabled />
                                             <DateInput label="Date Filed" placeholder={formatDate(selectedOB.created_date) || ''} disabled />
+                                            {
+                                                selectedOB.approved_date && selectedOB.approved_date ? (
+                                                    <>
+                                                        <Box style={{ display: 'flex', gap: '1rem', }} className="mb-5 " >
+                                                            <TextInput label="Approved by" placeholder={selectedOB.approver_name || ''} disabled />
+                                                            <TextInput label="Approved Date" placeholder={selectedOB.approved_date || ''} disabled />
+                                                        </Box>
+                                                    </>
+                                                ) : null
 
-                                            <Box style={{ display: 'flex', gap: '1rem', }} className="mb-5 " >
-                                                <TextInput label="Approved by" placeholder={selectedOB.approver_name || ''} disabled />
-                                                <TextInput label="Approved Date" placeholder={selectedOB.approved_date || ''} disabled />
-                                            </Box>
+                                            }
+
                                             {
                                                 selectedOB.ob_attach && Array.isArray(JSON.parse(selectedOB.ob_attach)) ? (
 

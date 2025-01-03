@@ -38,9 +38,41 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
 
 
     const [tabValue, setTabValue] = useState("leave_entry_list");
-
+    function validateForm() {
+        const isSameDate = values.date_from && values.date_to && values.date_from === values.date_to;
+        if (isSameDate && !values.halfday) {
+            notifications.show({
+                title: 'Halfday Required',
+                message: 'Please select either AM or PM for halfday.',
+                position: 'top-center',
+                color: 'red',
+                autoClose: 5000,
+            });
+            return false; // Stop form submission
+        }
+        const validateSickLeaveFile = () => {
+            if (values.leave_type_id === '2' && values.leave_days >= 3) {
+                return !Array.isArray(values.leave_attach) || values.leave_attach.length === 0;
+            }
+            return false;
+        };
+        const sickLeaveFileError = validateSickLeaveFile();
+        if (sickLeaveFileError) {
+            notifications.show({
+                title: 'File Attachment Required',
+                message: 'For Sick Leave with 3 or more leave days, a file attachment is required.',
+                position: 'top-center',
+                color: 'red',
+                autoClose: 5000,
+            });
+            return false; // Stop form submission
+        }
+        return true;
+    }
     function handleSubmit(e) {
         e.preventDefault();
+        const isValid = validateForm();
+        if (!isValid) return;
         console.log("ppasok", values);
         router.post('/Leave_Module/leave_entry', values, {
             onError: (errors) => {
@@ -76,7 +108,7 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                 [name]: value,
             };
 
-            const today = dayjs().startOf('day');  // Today's date without time
+            const today = dayjs().startOf('day');
 
             const minDate = today.subtract(1, 'month');
 
@@ -87,7 +119,7 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
             if (dateFrom && dateFrom.isBefore(minDate, 'day')) {
                 notifications.show({
                     title: 'Error',
-                    message: `You cannot file an OT request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    message: `You cannot file an leave request earlier than ${minDate.format('MMMM D, YYYY')}.`,
                     position: 'top-center',
                     color: 'red',
                     autoClose: 5000,
@@ -103,7 +135,7 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
             if (dateTo && dateTo.isBefore(minDate, 'day')) {
                 notifications.show({
                     title: 'Error',
-                    message: `You cannot file an OT request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    message: `You cannot file a leave request earlier than ${minDate.format('MMMM D, YYYY')}.`,
                     position: 'top-center',
                     color: 'red',
                     autoClose: 5000,
@@ -119,7 +151,6 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                 let excludedSundays = 0;
                 let currentDate = dateFrom;
 
-                // Loop through the days between dateFrom and dateTo, excluding Sundays
                 while (currentDate.isBefore(dateTo) || currentDate.isSame(dateTo, 'day')) {
                     if (currentDate.day() === 0) {
                         excludedSundays++;
@@ -127,7 +158,6 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                     currentDate = currentDate.add(1, 'day');
                 }
 
-                // Calculate the final days count after excluding Sundays
                 let daysCount = Math.max(daysDiff - excludedSundays, 0);
 
                 updatedValues.leave_days = daysCount;
@@ -144,12 +174,60 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                 [name]: value,
             };
 
-            const today = dayjs().startOf('day');  // Today's date without time
+            const today = dayjs().startOf('day');
             const minDate = today.subtract(1, 'month');
+            const calculateVacationMinDate = () => {
+                let daysBefore = 0;
+                let currentDate = dayjs().startOf('day');
 
-            const dateFrom = updatedValues.date_from && updatedValues.time_from
-                ? dayjs(updatedValues.date_from).hour(updatedValues.time_from.split(':')[0]).minute(updatedValues.time_from.split(':')[1])
+                while (daysBefore < 4) {
+                    currentDate = currentDate.add(1, 'day');
+                    if (currentDate.day() !== 0) { // Exclude Sundays
+                        daysBefore++;
+                    }
+                }
+
+                return currentDate;
+            };
+            const dateFrom = updatedValues.date_from
+                ? dayjs(updatedValues.date_from)
                 : null;
+
+            const dateTo = updatedValues.date_to
+                ? dayjs(updatedValues.date_to)
+                : null;
+            if (updatedValues.leave_type_id === '1' && dateFrom) {
+                const vacationMinDate = calculateVacationMinDate();
+
+                if (dateFrom.isBefore(vacationMinDate, 'day')) {
+                    notifications.show({
+                        title: 'Invalid Date',
+                        message: 'Vacation Leave must be at least 4 working days before the selected date, excluding Sundays.',
+                        position: 'top-center',
+                        color: 'red',
+                        autoClose: 5000,
+                    });
+
+                    updatedValues.date_from = '';
+                    updatedValues.date_to = '';
+                }
+            }
+
+            const isSameDate = dateFrom && dateTo && dateFrom.isSame(dateTo, 'day');
+            if (isSameDate && !updatedValues.halfday) {
+                notifications.show({
+                    title: 'Halfday Required',
+                    message: 'Please select either AM or PM for halfday.',
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+
+            }
+
+            if (!isSameDate && updatedValues.halfday) {
+                updatedValues.halfday = null;
+            }
 
             if (dateFrom && dateFrom.isBefore(minDate, 'day')) {
                 notifications.show({
@@ -163,14 +241,12 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                 updatedValues.date_from = '';
             }
 
-            const dateTo = updatedValues.date_to && updatedValues.time_to
-                ? dayjs(updatedValues.date_to).hour(updatedValues.time_to.split(':')[0]).minute(updatedValues.time_to.split(':')[1])
-                : null;
+            console.log("half", updatedValues.halfday);
 
             if (dateTo && dateTo.isBefore(minDate, 'day')) {
                 notifications.show({
                     title: 'Error',
-                    message: `You cannot file an OT request earlier than ${minDate.format('MMMM D, YYYY')}.`,
+                    message: `You cannot file an leave request earlier than ${minDate.format('MMMM D, YYYY')}.`,
                     position: 'top-center',
                     color: 'red',
                     autoClose: 5000,
@@ -179,7 +255,23 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                 updatedValues.date_to = '';
             }
 
+            if (dateFrom && dateTo) {
+                const daysDiff = dateTo.diff(dateFrom, 'days');
 
+                let excludedSundays = 0;
+                let currentDate = dateFrom;
+
+                while (currentDate.isBefore(dateTo) || currentDate.isSame(dateTo, 'day')) {
+                    if (currentDate.day() === 0) {
+                        excludedSundays++;
+                    }
+                    currentDate = currentDate.add(1, 'day');
+                }
+
+                let daysCount = Math.max(daysDiff - excludedSundays, 0);
+
+                updatedValues.leave_days = daysCount;
+            }
 
             return updatedValues;
         });
@@ -318,8 +410,23 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
             date_from: selectedLeave.date_from,
             date_to: selectedLeave.date_to,
             halfday: selectedLeave.halfday,
+            leave_days: selectedLeave.leave_days,
             reason: selectedLeave.reason,
-            leave_attach: selectedLeave.leave_attach,
+            leave_attach: values.leave_attach,
+        }
+        if (updatedFields.leave_type_id === '2' && updatedFields.leave_days >= 3) {
+            if (!Array.isArray(updatedFields.leave_attach) || updatedFields.leave_attach.length === 0) {
+                notifications.show({
+                    title: 'File Attachment Required',
+                    message: 'For Sick Leave with 3 or more leave days, a file attachment is required.',
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+                updatedFields.leave_attach = [];
+                return false;
+
+            }
         }
         router.post('/Leave_Module/leave_entry/edit', updatedFields, {
             onError: (errors) => {
@@ -342,6 +449,11 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                     autoClose: 5000,
                 })
                 close2();
+                setValues(prevValues => ({
+                    ...prevValues,      // Spread the previous state
+                    leave_attach: null  // Set leave_attach to null
+                }));
+
             }
         });
 
@@ -378,6 +490,40 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
     const [openedForm, setOpenedForm] = useState(false);
     const openForm = () => setOpenedForm(true);
     const closeForm = () => setOpenedForm(false);
+    const calculateMinDate = () => {
+        let minDate = new Date();
+        let workingDaysCount = 0;
+
+        // Add 4 working days excluding Sundays
+        while (workingDaysCount < 4) {
+            minDate.setDate(minDate.getDate() + 1);
+            if (minDate.getDay() !== 0) {  // Skip Sunday (day 0)
+                workingDaysCount++;
+            }
+        }
+        return minDate;
+    };
+    useEffect(() => {
+        if (values.leave_type_id === '1' && values.date_from) {
+            const selectedDate = new Date(values.date_from);
+            const minDate = calculateMinDate();
+
+            if (selectedDate < minDate) {
+                notifications.show({
+                    title: 'Invalid Date',
+                    message: 'Vacation Leave must be at least 4 working days before the selected date, excluding Sundays.',
+                    position: 'top-center',
+                    color: 'red',
+                    autoClose: 5000,
+                });
+                handleChange("date_from", '');
+                handleChange("date_to", '');
+            }
+        }
+    }, [values.leave_type_id, values.date_from]);
+
+
+
     return (
         <AppLayout>
             <Container fluid className="mt-5">
@@ -428,29 +574,53 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                                 style={{ width: 175 }}
                                                 onChange={(value) => {
                                                     if (value) {
-
                                                         const selectedDate = new Date(value);
                                                         const today = new Date();
-                                                        const dateTo = new Date(values.date_to);
                                                         today.setHours(0, 0, 0, 0);
-                                                        if (selectedDate < today) {
-                                                            notifications.show({
-                                                                title: 'Warning',
-                                                                message: `You are currently late filing a UT Request`,
-                                                                position: 'top-center',
-                                                                color: 'yellow',
-                                                                autoClose: 5000,
-                                                            })
+                                                        const dateTo = new Date(values.date_to);
+
+                                                        const minDate = new Date(today);
+                                                        let workingDaysCount = 0;
+                                                        while (workingDaysCount < 4) {
+                                                            minDate.setDate(minDate.getDate() + 1);
+                                                            if (minDate.getDay() !== 0) {
+                                                                workingDaysCount++;
+                                                            }
                                                         }
 
-                                                        if (selectedDate > dateTo) {
-                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                        if (values.leave_type_id === '1' && selectedDate < minDate) {
+                                                            notifications.show({
+                                                                title: 'Invalid Date',
+                                                                message: 'Vacation Leave must be at least 4 working days before the selected date, excluding Sundays.',
+                                                                position: 'top-center',
+                                                                color: 'red',
+                                                                autoClose: 5000,
+                                                            });
+                                                            handleChange("date_from", '');
+                                                            handleChange("date_to", '');
 
-                                                            handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
                                                         } else {
-                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                            handleChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+
+                                                            // Ensure date_to is synced if not already set
                                                             if (!values.date_to) {
                                                                 handleChange("date_to", dayjs(value).format('YYYY-MM-DD'));
+                                                            }
+
+                                                            // Check if the date_from is a past date (late filing)
+                                                            if (selectedDate < today) {
+                                                                notifications.show({
+                                                                    title: 'Warning',
+                                                                    message: `You are currently late filing a Leave Request.`,
+                                                                    position: 'top-center',
+                                                                    color: 'yellow',
+                                                                    autoClose: 5000,
+                                                                });
+                                                            }
+                                                            if (selectedDate > dateTo) {
+                                                                handleChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+
+                                                                handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
                                                             }
                                                         }
                                                     } else {
@@ -458,7 +628,6 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                                         handleChange("date_to", '');
                                                     }
                                                 }}
-
                                             />
 
                                             <DateInput
@@ -478,7 +647,8 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                                             handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
 
 
-                                                        } else {
+                                                        }
+                                                        else {
                                                             handleChange("date_to", dayjs(value).format('YYYY-MM-DD'))
                                                             if (!values.date_to) {
                                                                 handleChange("date_from", dayjs(value).format('YYYY-MM-DD'));
@@ -592,8 +762,9 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                             <Table.Th> Employee Name</Table.Th>
                                             <Table.Th> Date From</Table.Th>
                                             <Table.Th> Date To</Table.Th>
+                                            <Table.Th> Leave Days</Table.Th>
                                             <Table.Th> Reason</Table.Th>
-                                            <Table.Th> Half Day</Table.Th>
+                                            <Table.Th w={80}> Half Day</Table.Th>
                                             <Table.Th> Status</Table.Th>
                                             <Table.Th> Date File</Table.Th>
                                             <Table.Th> Action</Table.Th>
@@ -605,11 +776,13 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                                 return (
                                                     <Table.Tr key={leave.leave_id}>
                                                         <Table.Td > {leave.leave_no}</Table.Td>
+                                                        <Table.Td> {leave.leavetype?.leave_type_name}</Table.Td>
                                                         <Table.Td> {leave.user?.name}</Table.Td>
                                                         <Table.Td> {leave.date_from}</Table.Td>
                                                         <Table.Td> {leave.date_to}</Table.Td>
+                                                        <Table.Td style={{ textAlign: "center" }}> {leave.leave_days}</Table.Td>
                                                         <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {leave.reason}</Table.Td>
-                                                        <Table.Td> {leave.halfday}</Table.Td>
+                                                        <Table.Td style={{ textAlign: "center" }}> {leave.halfday}</Table.Td>
                                                         <Table.Td> {leave.status?.mf_status_name}</Table.Td>
                                                         <Table.Td> {formatDate(leave.created_date)}</Table.Td>
                                                         <Table.Td>
@@ -636,126 +809,326 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                 <Modal size="l" opened={opened} onClose={close} title="Leave Request Details">
                                     {selectedLeave && (
                                         <>
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <TextInput label="Reference No." value={selectedLeave.leave_no || ''} disabled />
-                                                <Select label="Leave Status" placeholder={selectedLeave.status?.mf_status_name || ''} disabled />
+                                            <Box style={{ display: "flex", flexiwrap: "wrap" }}>
+                                                <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
+
+                                                    <TextInput label="Reference No." value={selectedLeave.leave_no || ''} disabled />
+                                                    <Select label="Leave Status" placeholder={selectedLeave.status?.mf_status_name || ''} disabled />
+                                                    <Select
+                                                        label="Leave Type"
+                                                        name="leave_type_id"
+                                                        placeholder={selectedLeave.leavetype?.leave_type_name || ''} disabled />
+
+
+                                                    <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                        <DateInput label="Date From" placeholder={selectedLeave.date_from || ''} disabled />
+                                                        <DateInput label="Date To" placeholder={selectedLeave.date_to || ''} disabled />
+                                                    </Box>
+                                                    <Box style={{ display: "flex", gap: "1rem" }}>
+
+                                                        {
+                                                            selectedLeave.halfday && (
+                                                                <TextInput
+                                                                    label="Half day"
+                                                                    value={selectedLeave.halfday || ''}
+                                                                    disabled
+                                                                />
+                                                            )
+                                                        }
+
+                                                        <TextInput
+                                                            label="Leave Days"
+                                                            name="leave_days"
+                                                            size="sm"
+                                                            value={selectedLeave.leave_days}
+                                                            disabled
+                                                            style={{ width: 100 }
+                                                            }
+                                                        />
+                                                    </Box>
+                                                    <Textarea label="Reason For Leave" value={selectedLeave.reason || ''} disabled />
+                                                </Box>
+                                                <Box style={{ flex: "1 1 35%", marginLeft: 10 }}>
+                                                    <DateInput label="Date Filed" placeholder={formatDate(selectedLeave.created_date) || ''} disabled />
+                                                    {
+                                                        selectedLeave.approved_date && selectedLeave.approver_name && (
+                                                            <>
+                                                                <TextInput label="Approved by" placeholder={selectedLeave.approver_name || ''} disabled />
+                                                                <TextInput label="Approved Date" placeholder={selectedLeave.approved_date || ''} disabled />
+                                                            </>
+                                                        )
+                                                    }
+
+                                                    <Box >
+
+
+                                                        {
+                                                            selectedLeave.leave_attach && Array.isArray(JSON.parse(selectedLeave.leave_attach)) ? (
+
+                                                                <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                                    {JSON.parse(selectedLeave.leave_attach).map((file, index) => (
+
+                                                                        <Box key={index} w={100} style={{ marginBottom: '1rem' }}>
+                                                                            <Text truncate="start">{file}</Text>
+                                                                            {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+
+                                                                                <Zoom>
+                                                                                    <Image
+                                                                                        w={128}
+                                                                                        h={128}
+                                                                                        src={`/storage/${file}`}
+                                                                                        alt={`Preview of ${file}`}
+                                                                                    />
+                                                                                </Zoom>
+
+                                                                            ) : (
+                                                                                <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                                                    <Text size="xl" color="dimmed">File</Text>
+                                                                                </Box>
+                                                                            )}
+                                                                        </Box>
+
+                                                                    ))}
+                                                                </SimpleGrid>
+
+                                                            ) : (
+                                                                <p>No attachment available.</p>
+                                                            )
+                                                        }
+
+
+                                                    </Box>
+                                                </Box>
 
                                             </Box>
-
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <DateInput label="OT Date From" placeholder={selectedLeave.date_from || ''} disabled />
-                                                <DateInput label="OT Date To" placeholder={selectedLeave.date_to || ''} disabled />
-                                            </Box>
-
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <TextInput label="Reason For Leave" value={selectedLeave.reason || ''} disabled />
-                                            </Box>
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                <DateInput label="Date Filed" placeholder={formatDate(selectedLeave.created_date) || ''} disabled />
-                                            </Box>
-                                            <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }} className="mb-5 " >
-                                                <TextInput label="Approved by" placeholder={selectedLeave.approver_name || ''} disabled />
-                                                <TextInput label="Approved Date" placeholder={selectedLeave.approved_date || ''} disabled />
-                                            </Box>
-
                                         </>
                                     )}
                                 </Modal>
-                                <Modal size="xl" opened={editOpened} onClose={close2} title="Edit Request Details" centered>
+                                <Modal size="auto" opened={editOpened} onClose={close2} title="Edit Request Details" centered>
                                     <form onSubmit={handleEditSubmit}>
                                         {selectedLeave && (
                                             <>
-                                                <TextInput
-                                                    label="Reference No."
-                                                    value={selectedLeave.leave_no || ''}
-                                                    disabled
-                                                />
-                                                <Select
-                                                    label="Leave Status"
-                                                    placeholder={selectedLeave.status?.mf_status_name || ''}
-                                                    disabled
-                                                />
+                                                <Box style={{ display: "flex", flexiwrap: "wrap" }}>
+                                                    <Box style={{ flex: "1 1 40%", minWidth: "300px" }}>
 
-                                                <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                                    <DateInput
-                                                        name="date_from"
-                                                        value={selectedLeave.date_from ? new Date(selectedLeave.date_from) : null}
-                                                        label="Date From"
-                                                        placeholder={selectedLeave.date_from || ''}
-                                                        rightSection={<IconCalendar />}
-                                                        style={{ flex: 1 }}
-                                                        onChange={(value) => {
-                                                            if (value) {
+                                                        <TextInput
+                                                            label="Reference No."
+                                                            value={selectedLeave.leave_no || ''}
+                                                            disabled
+                                                        />
+                                                        <Select
+                                                            label="Leave Status"
+                                                            placeholder={selectedLeave.status?.mf_status_name || ''}
+                                                            disabled
+                                                        />
+                                                        <Select
+                                                            placeholder="Pick status"
+                                                            label="Leave Type"
+                                                            name="leave_type_id"
+                                                            value={selectedLeave.leave_type_id || ''}
+                                                            onChange={(value) => handleSelectedLeaveChange('leave_type_id', value)}
+                                                            data={[
+                                                                { value: '1', label: 'Vacation Leave' },
+                                                                { value: '2', label: 'Sick Leave' },
+                                                                { value: '3', label: 'Maternity Leave' },
+                                                                { value: '4', label: 'Paternity Leave' },
+                                                                { value: '5', label: 'Magna Carta Leave' },
+                                                                { value: '6', label: 'Solo Parent Leave' },
+                                                                { value: '8', label: 'Emergency Leave' },
+                                                                { value: '9', label: 'Birthday Leave' },
+                                                                { value: '10', label: 'Flood Leave' }
+                                                            ]}
+                                                            style={{ width: 366 }}
+                                                        />
+                                                        <Box style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                                            <DateInput
+                                                                name="date_from"
+                                                                value={selectedLeave.date_from ? new Date(selectedLeave.date_from) : null}
+                                                                label="Date From"
+                                                                placeholder={selectedLeave.date_from || ''}
+                                                                rightSection={<IconCalendar />}
+                                                                style={{ flex: 1 }}
+                                                                onChange={(value) => {
+                                                                    if (value) {
 
-                                                                const selectedDate = new Date(value);
-                                                                const today = new Date();
-                                                                const dateTo = new Date(selectedLeave.date_to);
-                                                                today.setHours(0, 0, 0, 0);
-                                                                if (selectedDate < today) {
-                                                                    notifications.show({
-                                                                        title: 'Warning',
-                                                                        message: `You are currently late filing a UT Request`,
-                                                                        position: 'top-center',
-                                                                        color: 'yellow',
-                                                                        autoClose: 5000,
-                                                                    })
-                                                                }
+                                                                        const selectedDate = new Date(value);
+                                                                        const today = new Date();
+                                                                        const dateTo = new Date(selectedLeave.date_to);
+                                                                        today.setHours(0, 0, 0, 0);
+                                                                        if (selectedDate < today) {
+                                                                            notifications.show({
+                                                                                title: 'Warning',
+                                                                                message: `You are currently late filing a UT Request`,
+                                                                                position: 'top-center',
+                                                                                color: 'yellow',
+                                                                                autoClose: 5000,
+                                                                            })
+                                                                        }
 
-                                                                if (selectedDate > dateTo) {
-                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                        if (selectedDate > dateTo) {
+                                                                            handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
 
-                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
-                                                                } else {
-                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
-                                                                    if (!selectedLeave.date_to) {
-                                                                        handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'));
+                                                                            handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                        } else {
+                                                                            handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'))
+                                                                            if (!selectedLeave.date_to) {
+                                                                                handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'));
+                                                                            }
+                                                                        }
+                                                                    } else {
+                                                                        handleSelectedLeaveChange("date_from", '');
+                                                                        handleSelectedLeaveChange("date_to", '');
                                                                     }
-                                                                }
-                                                            } else {
-                                                                handleSelectedLeaveChange("date_from", '');
-                                                                handleSelectedLeaveChange("date_to", '');
-                                                            }
-                                                        }}
-                                                    />
-                                                    <DateInput
-                                                        name="date_to"
-                                                        value={selectedLeave.date_to ? new Date(selectedLeave.date_to) : null}
-                                                        label="Date To"
-                                                        placeholder={selectedLeave.date_to || ''}
-                                                        rightSection={<IconCalendar />}
-                                                        style={{ flex: 1 }}
-                                                        onChange={(value) => {
-                                                            if (value) {
-                                                                const dateFrom = new Date(selectedLeave.date_from);
-                                                                const selectedDate = new Date(value);
-                                                                if (selectedDate < dateFrom) {
-                                                                    handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
-                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                }}
+                                                            />
+                                                            <DateInput
+                                                                name="date_to"
+                                                                value={selectedLeave.date_to ? new Date(selectedLeave.date_to) : null}
+                                                                label="Date To"
+                                                                placeholder={selectedLeave.date_to || ''}
+                                                                rightSection={<IconCalendar />}
+                                                                style={{ flex: 1 }}
+                                                                onChange={(value) => {
+                                                                    if (value) {
+                                                                        const dateFrom = new Date(selectedLeave.date_from);
+                                                                        const selectedDate = new Date(value);
+                                                                        if (selectedDate < dateFrom) {
+                                                                            handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                            handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
 
 
-                                                                } else {
-                                                                    handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
-                                                                    if (!selectedLeave.date_to) {
-                                                                        handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                        } else {
+                                                                            handleSelectedLeaveChange("date_to", dayjs(value).format('YYYY-MM-DD'))
+                                                                            if (!selectedLeave.date_to) {
+                                                                                handleSelectedLeaveChange("date_from", dayjs(value).format('YYYY-MM-DD'));
+                                                                            }
+                                                                        }
                                                                     }
+                                                                    else {
+                                                                        handleSelectedLeaveChange("date_to", '');
+                                                                    }
+                                                                }}
+                                                            />
+
+                                                        </Box>
+                                                        <Box style={{ display: "flex", gap: "1rem" }}>
+
+
+                                                            <Radio.Group
+                                                                name="halfday"
+                                                                label="Halfday"
+                                                                value={selectedLeave.halfday}
+                                                                onChange={(value) => handleSelectedLeaveChange('halfday', value)}
+                                                                disabled={selectedLeave.date_from !== selectedLeave.date_to || !selectedLeave.date_from || !selectedLeave.date_to}
+
+                                                            >
+                                                                <Group >
+                                                                    <Radio value="AM" label="AM" disabled={selectedLeave.date_from !== selectedLeave.date_to || !selectedLeave.date_from || !selectedLeave.date_to} />
+                                                                    <Radio value="PM" label="PM" disabled={selectedLeave.date_from !== selectedLeave.date_to || !selectedLeave.date_from || !selectedLeave.date_to} />
+                                                                </Group>
+                                                            </Radio.Group>
+                                                            <TextInput
+                                                                label="Leave Days"
+                                                                name="leave_days"
+                                                                size="sm"
+                                                                value={selectedLeave.leave_days}
+                                                                disabled
+                                                                style={{ width: 100 }
                                                                 }
+                                                            />
+                                                        </Box>
+                                                        <Textarea
+                                                            label="Reason For Leave"
+                                                            value={selectedLeave.reason || ''}
+                                                            onChange={(e) =>
+                                                                setSelectedLeave({ ...selectedLeave, reason: e.target.value })
                                                             }
-                                                            else {
-                                                                handleSelectedLeaveChange("date_to", '');
+                                                            style={{ marginTop: '1rem' }}
+                                                        />
+                                                    </Box>
+                                                    <Box style={{ flex: "1 1 35%", marginLeft: 10 }}>
+                                                        <Dropzone
+                                                            onDrop={handleFileChange}
+                                                            onReject={(leave_attach) => console.log('rejected files', leave_attach)}
+                                                            maxSize={5 * 1024 ** 2}
+                                                            multiple
+                                                            style={{ width: "100%" }}>
+                                                            <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
+                                                                <Dropzone.Accept>
+                                                                    <IconUpload
+                                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-blue-6)' }}
+                                                                        stroke={1.5}
+                                                                    />
+                                                                </Dropzone.Accept>
+                                                                <Dropzone.Reject>
+                                                                    <IconX
+                                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-red-6)' }}
+                                                                        stroke={1.5}
+                                                                    />
+                                                                </Dropzone.Reject>
+                                                                <Dropzone.Idle>
+                                                                    <IconPhoto
+                                                                        style={{ width: rem(52), height: rem(52), color: 'var(--mantine-color-dimmed)' }}
+                                                                        stroke={1.5}
+                                                                    />
+                                                                </Dropzone.Idle>
+
+                                                                <Box>
+                                                                    <Text size="xl" inline>
+                                                                        Drag image or document here
+                                                                    </Text>
+                                                                    <Text size="sm" c="dimmed" inline mt={7}>
+                                                                        Each file should not exceed 5mb. Image will be previewed.
+                                                                    </Text>
+                                                                </Box>
+                                                            </Group>
+                                                        </Dropzone>
+
+                                                        <Box>
+                                                            <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                                {preview}
+                                                            </SimpleGrid>
+                                                            {
+                                                                selectedLeave.leave_attach && Array.isArray(JSON.parse(selectedLeave.leave_attach)) ? (
+
+                                                                    <SimpleGrid cols={{ base: 1, sm: 4 }} spacing="md">
+                                                                        {JSON.parse(selectedLeave.leave_attach).map((file, index) => (
+
+                                                                            <Box key={index} w={100} style={{ marginBottom: '1rem' }}>
+                                                                                <Text truncate="start">{file}</Text>
+                                                                                {file && file.match(/\.(jpeg|jpg|png|gif)$/i) ? (
+
+                                                                                    <Zoom>
+                                                                                        <Image
+                                                                                            w={128}
+                                                                                            h={128}
+                                                                                            src={`/storage/${file}`}
+                                                                                            alt={`Preview of ${file}`}
+                                                                                        />
+                                                                                    </Zoom>
+
+                                                                                ) : (
+                                                                                    <Box style={{ width: 256, height: 256, backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                                                        <Text size="xl" color="dimmed">File</Text>
+                                                                                    </Box>
+                                                                                )}
+                                                                            </Box>
+
+                                                                        ))}
+                                                                    </SimpleGrid>
+
+                                                                ) : (
+                                                                    <p>No attachment available.</p>
+                                                                )
                                                             }
-                                                        }}
-                                                    />
+                                                        </Box>
+
+
+                                                    </Box>
+
 
                                                 </Box>
 
-                                                <TextInput
-                                                    label="Reason For Leave"
-                                                    value={selectedLeave.reason || ''}
-                                                    onChange={(e) =>
-                                                        setSelectedLeave({ ...selectedLeave, reason: e.target.value })
-                                                    }
-                                                    style={{ marginTop: '1rem' }}
-                                                />
                                                 <Button
                                                     type="submit"
                                                     className="mt-3"
@@ -799,7 +1172,7 @@ export default function leave_entry({ LeaveList, viewLeaveRequest, spoiledLeaveL
                                                         <Table.Td> {leave.user?.name}</Table.Td>
                                                         <Table.Td> {leave.date_from}</Table.Td>
                                                         <Table.Td> {leave.date_to}</Table.Td>
-                                                        <Table.Td> {leave.halday}</Table.Td>
+                                                        <Table.Td> {leave.halfday}</Table.Td>
                                                         <Table.Td style={{ maxWidth: '200px', overflow: 'hidden', whiteSpace: 'normal', textOverflow: 'ellipsis' }}> {leave.reason}</Table.Td>
                                                         <Table.Td> {leave.status?.mf_status_name}</Table.Td>
                                                         <Table.Td> {formatDate(leave.updated_date)}</Table.Td>

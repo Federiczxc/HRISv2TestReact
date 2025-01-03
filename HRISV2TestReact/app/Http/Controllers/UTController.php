@@ -239,14 +239,7 @@ class UTController extends Controller
         return redirect()->intended('/UT_Module/ut_appr_list');
     }
 
-    public function viewUTPendingRequest($id)
-    {
-        $viewUTPendingRequest = UTModel::findorfail($id);
-        /*  dd("puke", $id, $viewUTRequest); */
-        return Inertia::render('UT_Module/ut_appr_list', [
-            'viewUTPendingRequest' => $viewUTPendingRequest,
-        ]);
-    }
+ 
     public function editUTApprRequest(Request $request) //MODAL Edit
     {
         $ut = UTModel::where('ut_no', $request->ut_no)

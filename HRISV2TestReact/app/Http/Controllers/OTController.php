@@ -99,13 +99,6 @@ class OTController extends Controller
         return redirect()->intended('/OT_Module/ot_entry');
     }
 
-    public function viewOTRequest($id)
-    {
-        $viewOTRequest = OTModel::findorfail($id);
-        return Inertia::render('OT_Module/ot_entry', [
-            'viewOTRequest' => $viewOTRequest,
-        ]);
-    }
     public function spoilOTRequest(Request $request, $id)
     {
         $spoilOTRequest = OTModel::where('ot_id', $id)->where('ot_status_id', 1)->first(); //only pending can be deleted
